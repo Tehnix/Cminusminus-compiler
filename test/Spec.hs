@@ -1,2 +1,9 @@
+module Main where
+
+import qualified Parser.Lexer
+import qualified Parser.Parser
+
 main :: IO ()
-main = putStrLn "Test suite not yet implemented"
+main = do
+  Parser.Lexer.main
+  Parser.Parser.main

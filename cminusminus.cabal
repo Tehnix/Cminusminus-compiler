@@ -1,41 +1,68 @@
+-- This file has been generated from package.yaml by hpack version 0.18.1.
+--
+-- see: https://github.com/sol/hpack
+
 name:                cminusminus
 version:             0.1.0.0
--- synopsis:
--- description:
 homepage:            https://github.com/Tehnix/cminusminus#readme
+bug-reports:         https://github.com/Tehnix/cminusminus/issues
 license:             BSD3
 license-file:        LICENSE
 author:              Christian Kjaer Laustsen
 maintainer:          ckl@codetalk.io
 copyright:           Christian Kjaer Laustsen
-category:            Miscellaneous
 build-type:          Simple
-extra-source-files:  README.md
-cabal-version:       >=1.10
+cabal-version:       >= 1.10
 
-library
-  hs-source-dirs:      src
-  exposed-modules:     Lib
-  build-depends:       base >= 4.7 && < 5
-  default-language:    Haskell2010
-
-executable cminusminus-exe
-  hs-source-dirs:      app
-  main-is:             Main.hs
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-  build-depends:       base
-                     , cminusminus
-  default-language:    Haskell2010
-
-test-suite cminusminus-test
-  type:                exitcode-stdio-1.0
-  hs-source-dirs:      test
-  main-is:             Spec.hs
-  build-depends:       base
-                     , cminusminus
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-  default-language:    Haskell2010
+extra-source-files:
+    README.md
 
 source-repository head
-  type:     git
+  type: git
   location: https://github.com/Tehnix/cminusminus
+
+library
+  hs-source-dirs:
+      src
+  exposed-modules:
+      Lib
+      Parser.Common
+      Parser.Lexer
+      Parser.Literal
+      Parser.Parser
+      Parser.Syntax
+      Parser.Token
+  other-modules:
+      Paths_cminusminus
+  build-depends:
+      base >= 4.7 && < 5
+    , array
+  default-language: Haskell2010
+
+executable cminusminus-exe
+  hs-source-dirs:
+      app
+  main-is: Main.hs
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >= 4.7 && < 5
+    , array
+    , cminusminus
+  default-language: Haskell2010
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >= 4.7 && < 5
+    , array
+    , cminusminus
+    , QuickCheck
+    , hspec
+  other-modules:
+      Parser.Lexer
+      Parser.Parser
+  default-language: Haskell2010

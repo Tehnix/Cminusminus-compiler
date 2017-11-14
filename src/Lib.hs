@@ -1,6 +1,9 @@
-module Lib
-    ( someFunc
-    ) where
+module Lib where
 
-someFunc :: IO ()
-someFunc = putStrLn "someFunc"
+import qualified Parser.Lexer as Lexer
+import qualified Parser.Parser as Parser
+
+parser :: String -> IO ()
+parser = print . Parser.parse . Lexer.lexer
+
+

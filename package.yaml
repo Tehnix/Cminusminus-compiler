@@ -1,0 +1,46 @@
+name:                cminusminus
+version:             0.1.0.0
+github:              Tehnix/cminusminus
+license:             BSD3
+author:              Christian Kjaer Laustsen
+maintainer:          ckl@codetalk.io
+copyright:           Christian Kjaer Laustsen
+
+extra-source-files:
+- README.md
+
+# Metadata used when publishing your package
+# synopsis:
+# description:
+# category:            Miscellaneous
+
+dependencies:
+- base >= 4.7 && < 5
+- array
+
+library:
+  source-dirs: src
+
+executables:
+  cminusminus-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - cminusminus
+
+tests:
+  spec:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - cminusminus
+    - QuickCheck
+    - hspec
