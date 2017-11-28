@@ -1,0 +1,113 @@
+%left '||'
+%left '&&'
+%left '==' '!='
+%left '<' '<=' '>' '>='
+%left '+' '-'
+%left '*' '/'
+%right NEG '!'
+%right '{'
+%right 'else'
+
+prog
+  : dcl ';' prog
+  | func prog
+  | {- empty -}
+
+dcl
+  : 'extern' type some_id_parm_types
+  | 'extern' 'void' some_id_parm_types
+  | type some_id_parm_types
+  | 'void' some_id_parm_types
+  | type some_var_decl
+
+var_decl
+  : id '[' intcon ']'
+  | id
+
+type
+  : 'char'
+  | 'int'
+
+parm_types
+  : 'void'
+  | some_parm_type
+
+func
+  : type id '(' parm_types ')' '{' many_fun_var_decl many_stmt '}'
+  | 'void' id '(' parm_types ')' '{' many_fun_var_decl many_stmt '}'
+
+stmt
+  : 'if' '(' expr ')' stmt_block
+  | 'if' '(' expr ')' stmt_block 'else' stmt_block
+  | 'while' '(' expr ')' stmt_block
+  | 'for' '(' maybe_assg ';' maybe_expr ';' maybe_assg ')' stmt_block
+  | stmt_block
+
+stmt_block
+  : assg ';'
+  | '{' many_stmt '}'
+  | 'return' maybe_expr ';'
+  | id '(' many_expr ')' ';'
+  | ';'
+
+assg
+  : id '[' expr ']' '=' expr
+  | id '=' expr
+
+expr
+  : '-' expr %prec NEG
+  | '!' expr
+  | expr '+' expr
+  | expr '-' expr
+  | expr '*' expr
+  | expr '/' expr
+  | expr '==' expr
+  | expr '!=' expr
+  | expr '<=' expr
+  | expr '<' expr
+  | expr '>=' expr
+  | expr '>' expr
+  | expr '&&' expr
+  | expr '||' expr
+  | id '(' many_expr ')'
+  | id '[' expr ']'
+  | id
+  | '(' expr ')'
+  | intcon
+  | charcon
+  | stringcon
+
+many_stmt
+  : stmt many_stmt
+  | {- empty -}
+
+maybe_assg
+  : assg
+  | {- empty -}
+
+maybe_expr
+  : expr
+  | {- empty -}
+
+many_expr
+  : expr ',' many_expr
+  | expr
+  | {- empty -}
+
+some_parm_type
+  : type id '[' ']' ',' some_parm_type
+  | type id '[' ']'
+  | type id ',' some_parm_type
+  | type id
+
+some_id_parm_types
+  : id '(' parm_types ')' ',' some_id_parm_types
+  | id '(' parm_types ')'
+
+some_var_decl
+  : var_decl ',' some_var_decl
+  | var_decl
+
+many_fun_var_decl
+  : type some_var_decl ';' many_fun_var_decl
+  | {- empty -}

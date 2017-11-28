@@ -17,6 +17,7 @@ extra-source-files:
 dependencies:
 - base >= 4.7 && < 5
 - array
+- pretty
 
 library:
   source-dirs: src

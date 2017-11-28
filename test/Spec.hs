@@ -1,9 +1,9 @@
 module Main where
 
-import qualified Parser.Lexer
-import qualified Parser.Parser
+import qualified Parser.LexerTest
+import qualified Parser.ParserTest
 
 main :: IO ()
 main = do
-  Parser.Lexer.main
-  Parser.Parser.main
+  Parser.LexerTest.main
+  Parser.ParserTest.main

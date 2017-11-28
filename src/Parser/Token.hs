@@ -1,6 +1,13 @@
 module Parser.Token where
+
 import Parser.Common
 import Parser.Literal
+
+data TokenLoc = TokenLoc
+  { lineNumber :: !Int
+  , columnNumber :: !Int
+  , preceedingChars :: !Int
+  } deriving (Eq, Show)
 
 -- | Reserved keywords.
 data Reserved

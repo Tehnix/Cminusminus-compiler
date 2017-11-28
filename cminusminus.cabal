@@ -32,11 +32,15 @@ library
       Parser.Parser
       Parser.Syntax
       Parser.Token
+      Render.Common
+      Render.Syntax
+      Render.Token
   other-modules:
       Paths_cminusminus
   build-depends:
       base >= 4.7 && < 5
     , array
+    , pretty
   default-language: Haskell2010
 
 executable cminusminus-exe
@@ -47,6 +51,7 @@ executable cminusminus-exe
   build-depends:
       base >= 4.7 && < 5
     , array
+    , pretty
     , cminusminus
   default-language: Haskell2010
 
@@ -59,10 +64,11 @@ test-suite spec
   build-depends:
       base >= 4.7 && < 5
     , array
+    , pretty
     , cminusminus
     , QuickCheck
     , hspec
   other-modules:
-      Parser.Lexer
-      Parser.Parser
+      Parser.LexerTest
+      Parser.ParserTest
   default-language: Haskell2010

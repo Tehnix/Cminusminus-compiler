@@ -27,8 +27,8 @@ data DeclarationType
   deriving (Eq, Show)
 
 -- | Unary Operators.
-data UnaryOperator
-  = BoolNegation
+data UnaryOperator =
+  BoolNegation
   deriving (Eq, Show)
 
 -- | Binary Operators.

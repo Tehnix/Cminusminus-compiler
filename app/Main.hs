@@ -4,5 +4,7 @@ import Lib
 
 main :: IO ()
 main = do
-  parser "1+1"
-  parser "1 * 2 + 4"
+  res <- parseFile "test/data/program-1.c"
+  case res of
+    Left e -> putStrLn e
+    Right p -> print p

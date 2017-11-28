@@ -1,63 +1,66 @@
 {
-module Parser.Parser (parse) where
+module Parser.Parser (parseTokens) where
 import Parser.Syntax
 import Parser.Token
 import Parser.Literal
 import Parser.Common
 import qualified Data.List.NonEmpty as NonE
 import Data.List.NonEmpty (NonEmpty(..))
+import qualified Parser.Lexer as Lexer
 
 }
 
-%name parse
-%tokentype { Token }
+%name parseTokens
+%tokentype { Lexer.TokenPos }
+%monad { Either Lexer.TokenPos }
 %error { parseError }
+{- %lexer { Lexer.lexer } { EOF } -}
 
 {- As with the lexer, all our terminals have to be specified here as well. -}
 %token 
       {- Literals. -}
-      id              { TokenId $$ }
-      intcon          { TokenInt $$ }
-      charcon         { TokenChar $$ }
-      stringcon       { TokenString $$ }
+      id              { (TokenId $$, _) }
+      intcon          { (TokenInt $$, _) }
+      charcon         { (TokenChar $$, _) }
+      stringcon       { (TokenString $$, _) }
       {- Symbols. -}
-      '('             { TokenBracket LeftSide Paren }
-      ')'             { TokenBracket RightSide Paren }
-      '{'             { TokenBracket LeftSide Brace }
-      '}'             { TokenBracket RightSide Brace }
-      '['             { TokenBracket LeftSide Bracket }
-      ']'             { TokenBracket RightSide Bracket }
-      '='             { TokenAssign }
-      ';'             { TokenSemiColon }
-      ','             { TokenComma }
-      {- Unary operators. -}
-      '!'             { TokenUnaryOp BoolNegation }
-      {- Binary operators. -}
-      '+'             { TokenBinOp Plus }
-      '-'             { TokenBinOp Minus }
-      '*'             { TokenBinOp Mul }
-      '/'             { TokenBinOp Div }
-      {- Relational operators. -}
-      '=='            { TokenRelOp Equal }
-      '!='            { TokenRelOp NotEqual }
-      '<='            { TokenRelOp LessThanEqual }
-      '<'             { TokenRelOp LessThan }
-      '>='            { TokenRelOp GreaterThanEqual }
-      '>'             { TokenRelOp GreaterThan }
-      {- Logical operators. -}
-      '&&'            { TokenLogicalOp And }
-      '||'            { TokenLogicalOp Or }
-      {- Reserved keywords. -}
-      'if'            { TokenReserved TokenIf }
-      'else'          { TokenReserved TokenElse }
-      'while'         { TokenReserved TokenWhile }
-      'for'           { TokenReserved TokenFor }
-      'return'        { TokenReserved TokenReturn }
-      'extern'        { TokenReserved TokenExtern }
+      '('             { (TokenBracket LeftSide Paren, _) }
+      ')'             { (TokenBracket RightSide Paren, _) }
+      '{'             { (TokenBracket LeftSide Brace, _) }
+      '}'             { (TokenBracket RightSide Brace, _) }
+      '['             { (TokenBracket LeftSide Bracket, _) }
+      ']'             { (TokenBracket RightSide Bracket, _) }
+      '='             { (TokenAssign, _) }
+      ';'             { (TokenSemiColon, _) }
+      ','             { (TokenComma, _) }
+      {- Unary operators.-}
+      '!'             { (TokenUnaryOp BoolNegation, _) }
+      {- Binary operator(s. , _)-}
+      '+'             { (TokenBinOp Plus, _) }
+      '-'             { (TokenBinOp Minus, _) }
+      '*'             { (TokenBinOp Mul, _) }
+      '/'             { (TokenBinOp Div, _) }
+      {- Relational operators.-}
+      '=='            { (TokenRelOp Equal, _) }
+      '!='            { (TokenRelOp NotEqual, _) }
+      '<='            { (TokenRelOp LessThanEqual, _) }
+      '<'             { (TokenRelOp LessThan, _) }
+      '>='            { (TokenRelOp GreaterThanEqual, _) }
+      '>'             { (TokenRelOp GreaterThan, _) }
+      {- Logical operators.-}
+      '&&'            { (TokenLogicalOp And, _) }
+      '||'            { (TokenLogicalOp Or, _) }
+      {- Reserved keywords.-}
+      'if'            { (TokenReserved TokenIf, _) }
+      'else'          { (TokenReserved TokenElse, _) }
+      'while'         { (TokenReserved TokenWhile, _) }
+      'for'           { (TokenReserved TokenFor, _) }
+      'return'        { (TokenReserved TokenReturn, _) }
+      'extern'        { (TokenReserved TokenExtern, _) }
       {- Types. -}
-      'char'          { TokenType TTypeChar }
-      'int'           { TokenType TTypeInt }
-      'void'          { TokenType TTypeVoid }
+      'char'          { (TokenType TTypeChar, _) }
+      'int'           { (TokenType TTypeInt, _) }
+      'void'          { (TokenType TTypeVoid, _) }
 
 {- Set precedence for the tokens. -}
 %left '||'
@@ -88,6 +91,7 @@ dcl  : 'extern' type some_id_parm_types         { Dcl Extern $2 (NonE.fromList $
      | 'extern' 'void' some_id_parm_types       { DclVoid Extern (NonE.fromList $3) }
      | type some_id_parm_types                  { Dcl Normal $1 (NonE.fromList $2) }
      | 'void' some_id_parm_types                { DclVoid Normal (NonE.fromList $2) }
+     | type some_var_decl                       { DclVar $1 (NonE.fromList $2) }
 
 var_decl :: { VarDeclaration }
 var_decl  : id '[' intcon ']'                   { Var $1 (Index $3) }
@@ -119,7 +123,8 @@ stmt  : 'if' '(' expr ')' stmt_block                    { If $3 $5 }
 productions that can stand alone, out of _stmt_.
 -}
 stmt_block :: { Stmt }
-stmt_block  : '{' many_stmt '}'                          { StmtBlock (listToMany $2) }
+stmt_block  : assg ';'                                   { StmtAssgn $1 }
+            | '{' many_stmt '}'                          { StmtBlock (listToMany $2) }
             | 'return' maybe_expr ';'                    { Return $2 }
             | id '(' many_expr ')' ';'                   { StmtId $1 (listToMany $3) }
             | ';'                                        { EmptyStmt }
@@ -194,9 +199,9 @@ some_parm_type  : type id '[' ']' ',' some_parm_type      { ParmType $1 $2 IsArr
                 | type id ',' some_parm_type              { ParmType $1 $2 IsNotArrayParm : $4 }
                 | type id                            { [ParmType $1 $2 IsNotArrayParm] }
 
-some_id_parm_types :: { [(Identifier, ParmTypes)] }
-some_id_parm_types  : id '(' parm_types ')' ',' some_id_parm_types  { ($1, $3) : $6}
-                    | id '(' parm_types ')'                         { [($1, $3)] }
+some_id_parm_types :: { [DclParmDcl] }
+some_id_parm_types  : id '(' parm_types ')' ',' some_id_parm_types  { DclParmDcl $1 $3 : $6}
+                    | id '(' parm_types ')'                         { [DclParmDcl $1 $3] }
 
 {- Either one or many `var_decl`. In a grammar production this'll
 look something like: var_decl { ',' var_decl }
@@ -214,6 +219,7 @@ many_fun_var_decl : type some_var_decl ';' many_fun_var_decl { ($1, $2) : $4 }
 
 
 {
+
 -- | Convert a list to a `Many`, which is either `Empty` or a `NonEmpty a`.
 listToMany :: [a] -> Many a   
 listToMany [] = Empty
@@ -221,15 +227,19 @@ listToMany as = Many (NonE.fromList as)
 
 -- | Construct the `FunctionVarDeclaration`. Note that we rely on 
 -- `some_var_decl` to never be an empty list!
-funVarToMany :: [(Type, [VarDeclaration])] -> FunctionVarDeclaration
-funVarToMany []      = Empty
-funVarToMany as      = Many $ NonE.fromList $ sndToSome as
+funVarToMany :: [(Type, [VarDeclaration])] -> FunVarDcl
+funVarToMany []      = FunVarDcl Empty
+funVarToMany as      = FunVarDcl $ Many $ NonE.fromList $ sndToSome as
   where 
-    sndToSome :: [(Type, [VarDeclaration])] -> [(Type, NonEmpty VarDeclaration)]
+    sndToSome :: [(Type, [VarDeclaration])] -> [FunVarTypeDcl]
     sndToSome [] = []
-    sndToSome ((t, vs):vds) = (t, (NonE.fromList vs)) : sndToSome vds
+    sndToSome ((t, vs):vds) = FunVarTypeDcl t (NonE.fromList vs) : sndToSome vds
+
+-- lexwrap :: (Token -> P a) -> P a
+-- lexwrap cont = Lexer.lexer `thenP` \token -> cont token
 
 -- | Express that we encountered a parser error.
-parseError :: [Token] -> a
-parseError t = error $ "Parse error on: " ++ show t
+parseError :: [Lexer.TokenPos] -> Either Lexer.TokenPos a
+parseError [] = error "Parser ended in error!"
+parseError (t : ts) = Left t
 }

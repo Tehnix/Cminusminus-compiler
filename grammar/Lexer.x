@@ -1,11 +1,12 @@
 {
-module Parser.Lexer (lexer) where
+module Parser.Lexer (lexer, tokenPosition, TokenPos) where
 import Parser.Token
 import Parser.Literal
 import Parser.Common
+
 }
 
-%wrapper "basic"
+%wrapper "posn"
 
 $digit = 0-9          -- digits
 $letter = [a-zA-Z]    -- alphabetic characters
@@ -26,66 +27,74 @@ tokens :-
   -- We are whitespace insensitive.
   $white+                           ;
   -- Comments.
-  @comment                          { \s -> TokenComment (stripComment s) }
-  @multilineComment                 { \s -> TokenMultiLineComment (stripMultiLineComment s) }
+  @comment                          { \p s -> (TokenComment (stripComment s), p) }
+  @multilineComment                 { \p s -> (TokenMultiLineComment (stripMultiLineComment s), p) }
   -- Symbols.
-  "("                               { \_ -> TokenBracket LeftSide Paren }
-  ")"                               { \_ -> TokenBracket RightSide Paren }
-  "{"                               { \_ -> TokenBracket LeftSide Brace }
-  "}"                               { \_ -> TokenBracket RightSide Brace }
-  "["                               { \_ -> TokenBracket LeftSide Bracket }
-  "]"                               { \_ -> TokenBracket RightSide Bracket }
-  ","                               { \_ -> TokenComma }
-  ";"                               { \_ -> TokenSemiColon }
-  "="                               { \_ -> TokenAssign }
+  "("                               { \p _ -> (TokenBracket LeftSide Paren, p) }
+  ")"                               { \p _ -> (TokenBracket RightSide Paren, p) }
+  "{"                               { \p _ -> (TokenBracket LeftSide Brace, p) }
+  "}"                               { \p _ -> (TokenBracket RightSide Brace, p) }
+  "["                               { \p _ -> (TokenBracket LeftSide Bracket, p) }
+  "]"                               { \p _ -> (TokenBracket RightSide Bracket, p) }
+  ","                               { \p _ -> (TokenComma, p) }
+  ";"                               { \p _ -> (TokenSemiColon, p) }
+  "="                               { \p _ -> (TokenAssign, p) }
   -- Binary Operators.
-  "+"                               { \s -> TokenBinOp Plus}
-  "-"                               { \s -> TokenBinOp Minus}
-  "*"                               { \s -> TokenBinOp Mul}
-  "/"                               { \s -> TokenBinOp Div}
+  "+"                               { \p s -> (TokenBinOp Plus, p) }
+  "-"                               { \p s -> (TokenBinOp Minus, p) }
+  "*"                               { \p s -> (TokenBinOp Mul, p) }
+  "/"                               { \p s -> (TokenBinOp Div, p) }
   -- Unary operators.
-  "!"                               { \s -> TokenUnaryOp BoolNegation }
+  "!"                               { \p s -> (TokenUnaryOp BoolNegation, p) }
   -- Relational Operators.
-  "=="                              { \s -> TokenRelOp Equal }
-  "!="                              { \s -> TokenRelOp NotEqual }
-  "<="                              { \s -> TokenRelOp LessThanEqual }
-  "<"                               { \s -> TokenRelOp LessThan }
-  ">="                              { \s -> TokenRelOp GreaterThanEqual }
-  ">"                               { \s -> TokenRelOp GreaterThan }
+  "=="                              { \p s -> (TokenRelOp Equal, p) }
+  "!="                              { \p s -> (TokenRelOp NotEqual, p) }
+  "<="                              { \p s -> (TokenRelOp LessThanEqual, p) }
+  "<"                               { \p s -> (TokenRelOp LessThan, p) }
+  ">="                              { \p s -> (TokenRelOp GreaterThanEqual, p) }
+  ">"                               { \p s -> (TokenRelOp GreaterThan, p) }
   -- Logical Operators.
-  "&&"                              { \s -> TokenLogicalOp And }
-  "||"                              { \s -> TokenLogicalOp Or }
+  "&&"                              { \p s -> (TokenLogicalOp And, p) }
+  "||"                              { \p s -> (TokenLogicalOp Or, p) }
   -- Reserved keywords.
-  "if"                              { \_ -> TokenReserved TokenIf } 
-  "else"                            { \_ -> TokenReserved TokenElse }
-  "while"                           { \_ -> TokenReserved TokenWhile } 
-  "for"                             { \_ -> TokenReserved TokenFor } 
-  "return"                          { \_ -> TokenReserved TokenReturn } 
-  "extern"                          { \_ -> TokenReserved TokenExtern }
+  "if"                              { \p _ -> (TokenReserved TokenIf, p) }
+  "else"                            { \p _ -> (TokenReserved TokenElse, p) }
+  "while"                           { \p _ -> (TokenReserved TokenWhile, p) }
+  "for"                             { \p _ -> (TokenReserved TokenFor, p) }
+  "return"                          { \p _ -> (TokenReserved TokenReturn, p) }
+  "extern"                          { \p _ -> (TokenReserved TokenExtern, p) }
   -- Types.
-  "char"                            { \_ -> TokenType TTypeChar }
-  "int"                             { \_ -> TokenType TTypeInt }
-  "void"                            { \_ -> TokenType TTypeVoid }
+  "char"                            { \p _ -> (TokenType TTypeChar, p) }
+  "int"                             { \p _ -> (TokenType TTypeInt, p) }
+  "void"                            { \p _ -> (TokenType TTypeVoid, p) }
   -- Literals.
-  $digit+                           { \s -> TokenInt (IntCon (read s)) }
-  @char                             { \s -> TokenChar (CharCon (stripChar s)) }
-  @string                           { \s -> TokenString (StringCon (stripString s)) }
-  $letter [$letter $digit \_]*      { \s -> TokenId (Identifier s) }
+  $digit+                           { \p s -> (TokenInt (IntCon (read s)), p) }
+  @char                             { \p s -> (TokenChar (CharCon (stripChar s)), p) }
+  @string                           { \p s -> (TokenString (StringCon (stripString s)), p) }
+  $letter [$letter $digit \_]*      { \p s -> (TokenId (Identifier s), p) }
 
 
 {
 stripChar :: String -> Char
 stripChar (_:c:_) = c
+stripChar s = error $ "stripChar: Failed stripping character: " ++ s
 
 stripString :: String -> String
 stripString s = tail (init s)
 
 stripComment :: String -> String
 stripComment (_:_:s) = s
+stripComment s = error $ "stripComment: Failed stripping comment: " ++ s
 
 stripMultiLineComment :: String -> String
 stripMultiLineComment (_:_:s) = (init . init) s
+stripMultiLineComment s = error $ "stripMultiLineComment: Failed stripping comment: " ++ s
 
-lexer :: String -> [Token]
+tokenPosition :: TokenPos -> TokenLoc
+tokenPosition (_, AlexPn pc l c) = TokenLoc { lineNumber = l, columnNumber = c, preceedingChars = pc }
+
+type TokenPos = (Token, AlexPosn)
+
+lexer :: String -> [TokenPos]
 lexer = alexScanTokens
 }

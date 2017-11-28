@@ -1,12 +1,12 @@
-module Parser.Lexer where
+module Parser.LexerTest where
 
 import Control.Exception (evaluate)
 import Test.Hspec
 
-import Parser.Lexer
-import Parser.Token
-import Parser.Literal
 import Parser.Common
+import Parser.Lexer
+import Parser.Literal
+import Parser.Token
 
 main :: IO ()
 main =
@@ -14,25 +14,42 @@ main =
   describe "Lexer.lexer" $ do
     it "tokenizes characters" $
       lexer "'c' 'h' '\n' '\0'" `shouldBe`
-      [TokenChar (CharCon 'c'), TokenChar (CharCon 'h'), TokenChar (CharCon '\n'), TokenChar (CharCon '\0')]
+      [ TokenChar (CharCon 'c')
+      , TokenChar (CharCon 'h')
+      , TokenChar (CharCon '\n')
+      , TokenChar (CharCon '\0')
+      ]
     it "tokenizes strings" $ do
       let tokens = lexer "\"Heythere\" \"Another\""
-      tokens `shouldBe` [TokenString (StringCon "Heythere"), TokenString (StringCon "Another")]
+      tokens `shouldBe`
+        [TokenString (StringCon "Heythere"), TokenString (StringCon "Another")]
     it "tokenizes digits" $
-      lexer "10 30 22" `shouldBe` [TokenInt (IntCon 10), TokenInt (IntCon 30), TokenInt (IntCon 22)]
-    it "tokenizes variables" $ lexer "myVar" `shouldBe` [TokenId (Identifier "myVar")]
+      lexer "10 30 22" `shouldBe`
+      [TokenInt (IntCon 10), TokenInt (IntCon 30), TokenInt (IntCon 22)]
+    it "tokenizes variables" $
+      lexer "myVar" `shouldBe` [TokenId (Identifier "myVar")]
     it "tokenizes // line comments" $
       lexer "10 // Checking it out\n 20" `shouldBe`
-      [TokenInt (IntCon 10), TokenComment " Checking it out", TokenInt (IntCon 20)]
+      [ TokenInt (IntCon 10)
+      , TokenComment " Checking it out"
+      , TokenInt (IntCon 20)
+      ]
     it "tokenizes /* */ block comments" $
       lexer "10 /* Checking it out*/ 20" `shouldBe`
-      [TokenInt (IntCon 10), TokenMultiLineComment " Checking it out", TokenInt (IntCon 20)]
+      [ TokenInt (IntCon 10)
+      , TokenMultiLineComment " Checking it out"
+      , TokenInt (IntCon 20)
+      ]
     it "tokenizes /* */ block comments with newlines in them" $
       lexer "10 /* Checking it \nout */ 20" `shouldBe`
-      [TokenInt (IntCon 10), TokenMultiLineComment " Checking it \nout ", TokenInt (IntCon 20)]
+      [ TokenInt (IntCon 10)
+      , TokenMultiLineComment " Checking it \nout "
+      , TokenInt (IntCon 20)
+      ]
     it "tokenizes strings with space in them" $ do
       let tokens = lexer "\"Hey there\" \"Another\""
-      tokens `shouldBe` [TokenString (StringCon "Hey there"), TokenString (StringCon "Another")]
+      tokens `shouldBe`
+        [TokenString (StringCon "Hey there"), TokenString (StringCon "Another")]
     it "throws error on ' (single quote) in char" $ do
       let tokens = lexer "'\''"
       (evaluate tokens) `shouldThrow` anyErrorCall
@@ -68,7 +85,7 @@ main =
       lexer "!" `shouldBe` [TokenUnaryOp BoolNegation]
       -- Unary negation is a bit of a special case since it's handled in 
       -- the parser.
-      lexer "-1" `shouldBe` [TokenBinOp Minus,TokenInt (IntCon 1)]
+      lexer "-1" `shouldBe` [TokenBinOp Minus, TokenInt (IntCon 1)]
     it "tokenizes types" $ do
       lexer "char" `shouldBe` [TokenType TTypeChar]
       lexer "int" `shouldBe` [TokenType TTypeInt]
