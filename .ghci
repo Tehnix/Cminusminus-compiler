@@ -1,1 +1,2 @@
 :set -fbyte-code
+:load Main
