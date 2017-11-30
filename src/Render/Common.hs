@@ -17,12 +17,15 @@ newlineSemi :: Doc
 newlineSemi = semi <> newline
 
 newlineBraces :: Int -> Doc -> Doc
-newlineBraces n d = lbrace <> d <> newline <> indent n <> rbrace
+newlineBraces n d =
+  lbrace <> newline <> indent n <> d <> newline <> rbrace <> newline
 
 indent :: Int -> Doc
 indent n = text $ replicate n ' '
 
 class Pretty p where
+  pprs :: Doc -> Int -> p -> Doc
+  pprs s i p = s <> ppr i p
   ppr :: Int -> p -> Doc
   pp :: p -> Doc
   pp = ppr 0
@@ -34,22 +37,33 @@ instance (Pretty a) => Pretty (Maybe a) where
       Just a -> ppr p a
 
 instance (Pretty a) => Pretty (NonEmpty a) where
-  ppr p e =
+  ppr = pprs (comma <> space)
+  pprs sep p e =
     case e of
       a :| [] -> ppr p a
-      a :| as ->
-        ppr p a <> foldl' (\p1 p2 -> p1 <> comma <> space <> ppr p p2) empty as
+      a :| as -> ppr p a <> sep <> pprs sep p as
+
+instance {-# OVERLAPPABLE #-} (Pretty a) => Pretty [a] where
+  ppr = pprs (comma <> space)
+  pprs sep p e =
+    case e of
+      [] -> empty
+      (a:[]) -> ppr p a
+      (a:as) -> pprs sep p [a] <> pprs sep p as
 
 instance (Pretty a) => Pretty (Many a) where
-  ppr p e =
+  ppr = pprs (comma <> space)
+  pprs sep p e =
     case e of
       Empty -> empty
-      Many as -> ppr p as
+      Many as -> pprs sep p as
 
 instance Pretty UnaryOperator where
   ppr p e =
     case e of
       BoolNegation -> text "!"
+      Increment -> text "++"
+      Decrement -> text "--"
 
 instance Pretty BinOperator where
   ppr p e =
@@ -80,6 +94,21 @@ instance Pretty IntCon where
     case e of
       IntCon i -> int i
 
+instance Pretty FloatCon where
+  ppr p e =
+    case e of
+      FloatCon i -> float i
+
+instance Pretty DoubleCon where
+  ppr p e =
+    case e of
+      DoubleCon i -> double i
+
+instance Pretty LongCon where
+  ppr p e =
+    case e of
+      LongCon i -> double i
+
 instance Pretty CharCon where
   ppr p e =
     case e of
@@ -93,21 +122,16 @@ instance Pretty StringCon where
 instance Pretty Identifier where
   ppr p e =
     case e of
-      Identifier i -> text i
+      Identifier isPtr i -> ppr p isPtr <> text i
 
-instance Pretty IsArrayParameter where
+instance Pretty IsPtr where
   ppr p e =
     case e of
-      IsArrayParm -> lbrack <> rbrack
-      IsNotArrayParm -> empty
+      IsRefPtr -> text "&"
+      IsDerefPtr -> text "*"
+      IsNotPtr -> empty
 
-instance (Pretty a) => Pretty (ArrayIndex a) where
-  ppr p e =
-    case e of
-      Index index -> brackets (ppr p index)
-      NotArray -> empty
-
-instance Pretty DeclarationType where
+instance Pretty Visibility where
   ppr p e =
     case e of
       Normal -> empty

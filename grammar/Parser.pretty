@@ -5,6 +5,7 @@
 %left '+' '-'
 %left '*' '/'
 %right NEG '!'
+%right '--' '++'
 %right '{'
 %right 'else'
 
@@ -15,9 +16,8 @@ prog
 
 dcl
   : 'extern' type some_id_parm_types
-  | 'extern' 'void' some_id_parm_types
   | type some_id_parm_types
-  | 'void' some_id_parm_types
+  | 'extern' type some_var_decl
   | type some_var_decl
 
 var_decl
@@ -27,6 +27,9 @@ var_decl
 type
   : 'char'
   | 'int'
+  | 'float'
+  | 'double'
+  | 'long'
 
 parm_types
   : 'void'
@@ -34,7 +37,6 @@ parm_types
 
 func
   : type id '(' parm_types ')' '{' many_fun_var_decl many_stmt '}'
-  | 'void' id '(' parm_types ')' '{' many_fun_var_decl many_stmt '}'
 
 stmt
   : 'if' '(' expr ')' stmt_block
@@ -53,6 +55,11 @@ stmt_block
 assg
   : id '[' expr ']' '=' expr
   | id '=' expr
+  | type id '=' expr
+  | '++' id
+  | id '++'
+  | '--' id
+  | id '--'
 
 expr
   : '-' expr %prec NEG
@@ -74,6 +81,9 @@ expr
   | id
   | '(' expr ')'
   | intcon
+  | floatcon
+  | doublecon
+  | longcon
   | charcon
   | stringcon
 

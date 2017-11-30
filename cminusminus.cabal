@@ -25,7 +25,10 @@ library
   hs-source-dirs:
       src
   exposed-modules:
+      Eval.Eval
+      Eval.SymbolTable
       Lib
+      Parser
       Parser.Common
       Parser.Lexer
       Parser.Literal
@@ -35,23 +38,28 @@ library
       Render.Common
       Render.Syntax
       Render.Token
+      Repl
   other-modules:
       Paths_cminusminus
   build-depends:
       base >= 4.7 && < 5
     , array
     , pretty
+    , containers
+    , pretty-simple
   default-language: Haskell2010
 
 executable cminusminus-exe
   hs-source-dirs:
       app
   main-is: Main.hs
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -fwarn-incomplete-patterns
   build-depends:
       base >= 4.7 && < 5
     , array
     , pretty
+    , containers
+    , pretty-simple
     , cminusminus
   default-language: Haskell2010
 
@@ -65,6 +73,8 @@ test-suite spec
       base >= 4.7 && < 5
     , array
     , pretty
+    , containers
+    , pretty-simple
     , cminusminus
     , QuickCheck
     , hspec

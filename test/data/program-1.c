@@ -1,7 +1,7 @@
 int avg(int count, int *value) {
     int i, total;
-    int sum = 0;
-    for (i= 1; i < count; i++) {
+    total = 0;
+    for (i = 0; i < count; i++) {
         total = total + value[i];
     }
 

@@ -1,2 +1,1 @@
-:set -fbyte-code
-:load Main
+:set -fwarn-incomplete-patterns

@@ -23,6 +23,9 @@ data Reserved
 data TType
   = TTypeChar
   | TTypeInt
+  | TTypeFloat
+  | TTypeDouble
+  | TTypeLong
   | TTypeVoid
   deriving (Eq, Show)
 
@@ -36,6 +39,9 @@ data Token
   | TokenMultiLineComment String -- /* comments */
   | TokenId Identifier -- id
   | TokenInt IntCon -- intcon
+  | TokenFloat FloatCon -- floatcon
+  | TokenDouble DoubleCon -- doublecon
+  | TokenLong LongCon -- longcon
   | TokenChar CharCon -- charcon
   | TokenString StringCon -- stringcon
   | TokenAssign -- '=' as in assignment

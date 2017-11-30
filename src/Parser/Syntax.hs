@@ -1,6 +1,7 @@
 module Parser.Syntax where
 
 import Data.List.NonEmpty
+import Data.Map.Strict (Map)
 
 import Parser.Common
 import Parser.Literal
@@ -16,37 +17,32 @@ data Prog
 
 -- | Grammar Production: _dcl_.
 data Declaration
-  = Dcl DeclarationType -- [ extern ] type id '(' parm_types ')' { ',' id '(' parm_types ')' }
+  = Dcl Visibility -- [ extern ] type id '(' parm_types ')' { ',' id '(' parm_types ')' }
         Type
         (NonEmpty DclParmDcl)
-  | DclVoid DeclarationType -- [ extern ] 'void' id '(' parm_types ')' { ',' id '(' parm_types ')' }
-            (NonEmpty DclParmDcl)
-  | DclVar Type -- type var_decl { ',' var_decl }
+  | DclVar Visibility -- [ extern ] type var_decl { ',' var_decl }
+           Type
            (NonEmpty VarDeclaration)
+  deriving (Eq, Show)
+
+-- | Grammar Production: _func_.
+data Function =
+  Fun Type -- type id '(' parm_types ')' '{' { type var_decl { ',' var_decl } ';' } { stmt } '}'
+      Identifier
+      Parameter
+      FunVarDcl
+      (Many Stmt)
   deriving (Eq, Show)
 
 data DclParmDcl =
   DclParmDcl Identifier
-             ParmTypes
+             Parameter
   deriving (Eq, Show)
 
 -- | Grammar Production: _var_decl_.
 data VarDeclaration =
   Var Identifier -- id [ '[' intcon ']' ]
-      (ArrayIndex IntCon)
-  deriving (Eq, Show)
-
--- | Grammar Production: _func_.
-data Function
-  = Fun Type -- type id '(' parm_types ')' '{' { type var_decl { ',' var_decl } ';' } { stmt } '}'
-        Identifier
-        ParmTypes
-        FunVarDcl
-        (Many Stmt)
-  | FunVoid Identifier -- void id '(' parm_types ')' '{' { type var_decl { ',' var_decl } ';' } { stmt } '}'
-            ParmTypes
-            FunVarDcl
-            (Many Stmt)
+      ArrayIndex
   deriving (Eq, Show)
 
 newtype FunVarDcl =
@@ -62,19 +58,17 @@ data FunVarTypeDcl =
 data Type
   = TypeChar -- char
   | TypeInt -- int
+  | TypeFloat -- float
+  | TypeDouble -- double
+  | TypeLong -- long
+  | TypeVoid -- void
+  | TypeArray Type -- array of any type
   deriving (Eq, Show)
 
 -- | Grammar Production: _parm_types_.
-data ParmTypes
-  = ParmTypeVoid -- void
-  | ParmTypes (NonEmpty ParmType) -- A parameter type, if not void, can be either one or many
-  deriving (Eq, Show)
-
--- | Internally used in `ParmTypes`
-data ParmType =
-  ParmType Type -- type id [ '[' ']' ] { ',' type id [ '[' ']' ] }
-           Identifier
-           IsArrayParameter
+data Parameter
+  = EmptyParam -- void
+  | Param (Map Identifier Type) -- A parameter type, if not void, can be either one or many
   deriving (Eq, Show)
 
 -- | Grammar Production: _stmt_.
@@ -99,10 +93,15 @@ data Stmt
   deriving (Eq, Show)
 
 -- | Grammar Production: _assg_.
-data Assignment =
-  AssignId Identifier -- id '[' expr ']' '=' expr
-           (ArrayIndex Expr)
-           Expr
+data Assignment
+  = AssignId (Maybe Type) -- id '[' expr ']' '=' expr
+             Identifier
+             ArrayIndex
+             Expr
+  | PrefixInc Identifier -- '++' expr
+  | PostfixInc Identifier -- expr '++'
+  | PrefixDec Identifier -- '--' expr
+  | PostfixDec Identifier -- expr '--'
   deriving (Eq, Show)
 
 -- | Grammar Production: _expr_.
@@ -120,10 +119,19 @@ data Expr
           Expr -- expr logical_op expr
   | IdFun Identifier -- id [ '(' [expr { ',' expr } ] ')' ]
           (Many Expr)
-  | Id (ArrayIndex Expr) -- id [ '[' expr ']' ]
+  | Id ArrayIndex -- id [ '[' expr ']' ]
        Identifier
   | Brack Expr -- '(' expr ')'
   | LitInt IntCon -- intcon
+  | LitFloat FloatCon -- floatcon
+  | LitDouble DoubleCon -- doublecon
+  | LitLong LongCon -- longcon
   | LitChar CharCon -- charcon
   | LitString StringCon -- strincon
+  deriving (Eq, Show)
+
+-- | Represent the index as an expression, or no index if it's not an array.
+data ArrayIndex
+  = Index Expr
+  | NotArray
   deriving (Eq, Show)

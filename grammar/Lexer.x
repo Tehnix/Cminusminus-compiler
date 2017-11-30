@@ -15,12 +15,17 @@ $specialString = [\"\n]
 -- $specialComment = (\/\*)
 $graphic = $printable # $white
 $graphicComment = [$graphic\n]
+$deref = [\*]
 
+@digit = $digit+
+@expon = [eE] [\-\+]? @digit
+@float = @digit \. @digit @expon? | @digit @expon
 @escape = '\\' ($printable | $digit+)
 @string = \" ($printable # $specialString)* \"
 @char = \' ([$printable\n\0] # $specialChar) \'
 @comment = "//".*
 @multilineComment = \/\* [$printable\n]* \*\/
+@identifier = $letter [$letter $digit \_]*
 
 
 tokens :-
@@ -46,6 +51,8 @@ tokens :-
   "/"                               { \p s -> (TokenBinOp Div, p) }
   -- Unary operators.
   "!"                               { \p s -> (TokenUnaryOp BoolNegation, p) }
+  "++"                              { \p s -> (TokenUnaryOp Increment, p) }
+  "--"                              { \p s -> (TokenUnaryOp Decrement, p) }
   -- Relational Operators.
   "=="                              { \p s -> (TokenRelOp Equal, p) }
   "!="                              { \p s -> (TokenRelOp NotEqual, p) }
@@ -66,12 +73,18 @@ tokens :-
   -- Types.
   "char"                            { \p _ -> (TokenType TTypeChar, p) }
   "int"                             { \p _ -> (TokenType TTypeInt, p) }
+  "double"                          { \p _ -> (TokenType TTypeDouble, p) }
+  "float"                           { \p _ -> (TokenType TTypeFloat, p) }
+  "long"                            { \p _ -> (TokenType TTypeLong, p) }
   "void"                            { \p _ -> (TokenType TTypeVoid, p) }
-  -- Literals.
-  $digit+                           { \p s -> (TokenInt (IntCon (read s)), p) }
+  -- Literals. FIXME: long and double are missing.
+  @float                            { \p s -> (TokenFloat (FloatCon (read s)), p) }
+  @digit                            { \p s -> (TokenInt (IntCon (read s)), p) }
   @char                             { \p s -> (TokenChar (CharCon (stripChar s)), p) }
   @string                           { \p s -> (TokenString (StringCon (stripString s)), p) }
-  $letter [$letter $digit \_]*      { \p s -> (TokenId (Identifier s), p) }
+  "*" @identifier                   { \p s -> (TokenId (Identifier IsDerefPtr (tail s)), p) }
+  "&" @identifier                   { \p s -> (TokenId (Identifier IsRefPtr (tail s)), p) }
+  @identifier                       { \p s -> (TokenId (Identifier IsNotPtr s), p) }
 
 
 {

@@ -23,15 +23,15 @@ The extended BNF notation is used,
 
 ## Lexical Rules
 
-| Production |  | Rules |
-|------------|--|-------|
-| _letter_ | :== | `a | b | ... | z | A | B | ... | Z` |
-| _digit_ | :== | `0 | 1 | ... | 9` | 
-| __id__ | :== | _letter_{ _letter_ \| _digit_ \| _ } |
-| __intcon__ | :== | _digit_{ _digit_ } |
-| __charcon__ | :== | `'ch' | '\n' | '\0'`<sup>1</sup> |
-| __stringcon__ | :== | "ch"<sup>2</sup> |
-| _Comments_ |  |Comments are as in C, i.e. a sequence of characters preceded by /* and followed by */, and not containing any occurrence of */. |
+| Production    |      | Rules                                    |
+| ------------- | ---- | ---------------------------------------- |
+| _letter_      | :==  | `a | b | ... | z | A | B | ... | Z`      |
+| _digit_       | :==  | `0 | 1 | ... | 9`                        |
+| __id__        | :==  | _letter_{ _letter_ \| _digit_ \| _ }     |
+| __intcon__    | :==  | _digit_{ _digit_ }                       |
+| __charcon__   | :==  | `'ch' | '\n' | '\0'`<sup>1</sup>         |
+| __stringcon__ | :==  | "ch"<sup>2</sup>                         |
+| _Comments_    |      | Comments are as in C, i.e. a sequence of characters preceded by /* and followed by */, and not containing any occurrence of */. |
 
 <sup>1</sup> where _ch_ denotes any printable ASCII character, as specified by `isprint()`, other than __\\__ (backslash) and __'__ (single quote).
 
@@ -41,58 +41,270 @@ The extended BNF notation is used,
 
 Nonterminals are shown in italics; terminals are shown in boldface, and sometimes enclosed within quotes for clarity.
 
-| Production |  | Rules |
-|------------|--|-------|
-| _prog_ | : | { _dcl_ '__;__' \| _func_} |
-| _dcl_ | : <br> \| <br> \| | _type var\_decl_ { ',' _var\_decl_ } <br> [ __extern__ ] _type_ __id__ '__(__' _parm\_types_ '__)__' { ',' __id__ '__(__' _parm\_types_ '__)__' } <br> [ __extern__ ] __void__ __id__ '__(__' _parm\_types_ '__)__' { ',' __id__ '__(__' _parm\_types_ '__)__' } |
-| _var\_decl_ | : | __id__ [ '__[__' __intcon__ '__]__' ] |
-| _type_ | : <br> \| | __char__ <br> __int__ |
-| _parm\_types_ | : <br> \| | __void__ <br> _type_ __id__ [ '__[__' '__]__' ] {',' _type_ __id__ [ '__[__' '__]__' ]} |
-| _func_ | : <br> \| | _type_ __id__ '__(__' _parm\_types_ '__)__' '__{__' { _type_ _var\_decl_ { ',' _var\_decl_ } '__;__' } { _stmt_ } '__}__' <br> __void__ __id__ '__(__' _parm\_types_ '__)__' '__{__' { _type_ _var\_decl_ { ',' _var\_decl_ } '__;__' } { _stmt_ } '__}__' |
-| _stmt_ | : <br> \| <br> \| <br> \| <br> \| <br> \| <br> \| <br> \| | __if__ '__(__' _expr_ '__)__' _stmt_ [ __else__ _stmt_ ] <br> __while__ '__(__' _expr_ '__)__' _stmt_ <br> __for__ '__(__' [ _assg_ ] '__;__' [ _expr_ ] '__;__' [ _assg_ ] '__)__' _stmt_ <br> __return__ [ _expr_ ] '__;__' <br> _assg_ '__;__' <br> __id__ '__(__' [ _expr_ { '__,__' _expr_ } ] <br> '__{__' { _stmt_ } '__}__' <br> '__;__'|
-| _assg_ | : | __id__ [ '__[__' _expr_ '__]__' ] = _expr_ |
-| _expr_ | : <br> \| <br> \| <br> \| <br> \| <br> \| <br> \| <br> \| <br> \| <br> \| | '__-__' _expr_ <br> '__!__' _expr_ <br> _expr_ _binop_ _expr_ <br> _expr_ _relop_ _expr_ <br> _expr_ _logical\_op_ _expr_ <br> __id__ [ '__(__' [ _expr_ { ',' _expr_ } ] '__)__' \| '__[__' _expr_ '__]__' ] <br> '__(__' _expr_ '__)__' <br> __intcon__ <br> __charcon__ <br> __stringcon__ |
-| _binop_ | : <br> \| <br> \| <br> \| | __+__ <br> __-__ <br> __*__ <br> __/__ |
-| _relop_ | : <br> \| <br> \| <br> \| <br> \| <br> \| | __==__ <br> __!=__ <br> __<=__ <br> __<__ <br> __>=__ <br> __>__ |
-| _logical\_op_ | : <br> \| | __&&__ <br> __\|\|__ |
+| Production    |                                          | Rules                                    |
+| ------------- | ---------------------------------------- | ---------------------------------------- |
+| _prog_        | :                                        | { _dcl_ '__;__' \| _func_}               |
+| _dcl_         | : <br> \| <br>                           | _type var\_decl_ { ',' _var\_decl_ } <br> [ __extern__ ] _type_ __id__ '__(__' _parm\_types_ '__)__' { ',' __id__ '__(__' _parm\_types_ '__)__' } |
+| _var\_decl_   | :                                        | __id__ [ '__[__' __intcon__ '__]__' ]    |
+| _type_        | : <br> \|<br />\|<br />\|<br />\|<br />\| | __char__ <br> __int__<br />__float__<br />__double__<br />__long__<br />__void__ |
+| _parm\_types_ | : <br> \|                                | __void__ <br> _type_ __id__ [ '__[__' '__]__' ] {',' _type_ __id__ [ '__[__' '__]__' ]} |
+| _func_        | : <br> \|                                | _type_ __id__ '__(__' _parm\_types_ '__)__' '__{__' { _type_ _var\_decl_ { ',' _var\_decl_ } '__;__' } { _stmt_ } '__}__' <br> __void__ __id__ '__(__' _parm\_types_ '__)__' '__{__' { _type_ _var\_decl_ { ',' _var\_decl_ } '__;__' } { _stmt_ } '__}__' |
+| _stmt_        | : <br> \| <br> \| <br> \| <br> \| <br> \| <br> \| <br> \| | __if__ '__(__' _expr_ '__)__' _stmt_ [ __else__ _stmt_ ] <br> __while__ '__(__' _expr_ '__)__' _stmt_ <br> __for__ '__(__' [ _assg_ ] '__;__' [ _expr_ ] '__;__' [ _assg_ ] '__)__' _stmt_ <br> __return__ [ _expr_ ] '__;__' <br> _assg_ '__;__' <br> __id__ '__(__' [ _expr_ { '__,__' _expr_ } ] <br> '__{__' { _stmt_ } '__}__' <br> '__;__' |
+| _assg_        | :                                        | __id__ [ '__[__' _expr_ '__]__' ] = _expr_ |
+| _expr_        | : <br> \| <br> \| <br> \| <br> \| <br> \| <br> \| <br> \| <br> \| <br> \| | '__-__' _expr_ <br> '__!__' _expr_ <br> _expr_ _binop_ _expr_ <br> _expr_ _relop_ _expr_ <br> _expr_ _logical\_op_ _expr_ <br> __id__ [ '__(__' [ _expr_ { ',' _expr_ } ] '__)__' \| '__[__' _expr_ '__]__' ] <br> '__(__' _expr_ '__)__' <br> __intcon__ <br> __charcon__ <br> __stringcon__ |
+| _binop_       | : <br> \| <br> \| <br> \|                | __+__ <br> __-__ <br> __*__ <br> __/__   |
+| _relop_       | : <br> \| <br> \| <br> \| <br> \| <br> \| | __==__ <br> __!=__ <br> __<=__ <br> __<__ <br> __>=__ <br> __>__ |
+| _logical\_op_ | : <br> \|                                | __&&__ <br> __\|\|__                     |
 
 ### Operator associativity and Precedences
 
-| Operator | Associativity |
-|------------|------|
-| !, - (unary) | right to left |
-| *, / | left to right |
+| Operator      | Associativity |
+| ------------- | ------------- |
+| !, - (unary)  | right to left |
+| *, /          | left to right |
 | +, - (binary) | left to right |
-| <, <=, > >= | left to right |
-| ==, != | left to right |
-| && | left to right |
-| \|\| | left to right |
+| <, <=, > >=   | left to right |
+| ==, !=        | left to right |
+| &&            | left to right |
+| \|\|          | left to right |
 
 ## Abstract syntax tree
 
 We will model the abstract syntax tree as a Haskell data type,
 
 ```haskell
--- | Aliases for our literals.
-type Intcon = Int32
-type Charcon = Word8
-type Stringcon = ByteString
-type Identifier = String
-type Extern = Maybe Bool
+-- | Grammar Production: _prog_.
+data Prog
+  = Decl Declaration -- 	{ dcl ';'  |  func }
+         Prog
+  | Func Function
+         Prog
+  | EOF
+  deriving (Eq, Show)
 
--- | The type production
-data AType
-  = TypeChar 
-  | TypeInt
+-- | Grammar Production: _dcl_.
+data Declaration
+  = Dcl DeclarationType -- [ extern ] type id '(' parm_types ')' { ',' id '(' parm_types ')' }
+        Type
+        (NonEmpty DclParmDcl)
+  | DclVar Type -- type var_decl { ',' var_decl }
+           (NonEmpty VarDeclaration)
+  deriving (Eq, Show)
 
--- | the binop production
+data DclParmDcl =
+  DclParmDcl Identifier
+             ParmTypes
+  deriving (Eq, Show)
+
+-- | Grammar Production: _var_decl_.
+data VarDeclaration =
+  Var Identifier -- id [ '[' intcon ']' ]
+      (ArrayIndex IntCon)
+  deriving (Eq, Show)
+
+-- | Grammar Production: _func_.
+data Function =
+  Fun Type -- type id '(' parm_types ')' '{' { type var_decl { ',' var_decl } ';' } { stmt } '}'
+      Identifier
+      ParmTypes
+      FunVarDcl
+      (Many Stmt)
+  deriving (Eq, Show)
+
+newtype FunVarDcl =
+  FunVarDcl (Many FunVarTypeDcl)
+  deriving (Eq, Show)
+
+data FunVarTypeDcl =
+  FunVarTypeDcl Type
+                (NonEmpty VarDeclaration)
+  deriving (Eq, Show)
+
+-- | Grammar Production: _type_.
+data Type
+  = TypeChar -- char
+  | TypeInt -- int
+  | TypeFloat -- float
+  | TypeDouble -- double
+  | TypeLong -- long
+  | TypeVoid -- void
+  deriving (Eq, Show)
+
+-- | Grammar Production: _parm_types_.
+data ParmTypes
+  = ParmTypeVoid -- void
+  | ParmTypes (NonEmpty ParmType) -- A parameter type, if not void, can be either one or many
+  deriving (Eq, Show)
+
+-- | Internally used in `ParmTypes`
+data ParmType =
+  ParmType Type -- type id [ '[' ']' ] { ',' type id [ '[' ']' ] }
+           Identifier
+           IsArrayParameter
+  deriving (Eq, Show)
+
+-- | Grammar Production: _stmt_.
+data Stmt
+  = If Expr -- 	if '(' expr ')' stmt [ else stmt ]
+       Stmt
+  | IfElse Expr
+           Stmt
+           Stmt
+  | While Expr -- while '(' expr ')' stmt
+          Stmt
+  | For (Maybe Assignment) -- for '(' [ assg ] ';' [ expr ] ';' [ assg ] ')' stmt
+        (Maybe Expr)
+        (Maybe Assignment)
+        Stmt
+  | StmtAssgn Assignment -- assg ';'
+  | Return (Maybe Expr) -- 	return [ expr ] ';'
+  | StmtId Identifier -- 	id '(' [expr { ',' expr } ] ')' ';'
+           (Many Expr)
+  | StmtBlock (Many Stmt) -- '{' { stmt } '}'
+  | EmptyStmt -- ';'
+  deriving (Eq, Show)
+
+-- | Grammar Production: _assg_.
+data Assignment
+  = AssignId Identifier -- id '[' expr ']' '=' expr
+             (ArrayIndex Expr)
+             Expr
+  | PrefixInc Identifier -- '++' expr
+  | PostfixInc Identifier -- expr '++'
+  | PrefixDec Identifier -- '--' expr
+  | PostfixDec Identifier -- expr '--'
+  deriving (Eq, Show)
+
+-- | Grammar Production: _expr_.
+data Expr
+  = Negate Expr -- '-' expr
+  | NegateBool Expr -- '!' expr
+  | BinOp BinOperator -- expr binop expr
+          Expr
+          Expr
+  | RelOp RelOperator
+          Expr
+          Expr -- expr relop expr
+  | LogOp LogicalOperator
+          Expr
+          Expr -- expr logical_op expr
+  | IdFun Identifier -- id [ '(' [expr { ',' expr } ] ')' ]
+          (Many Expr)
+  | Id (ArrayIndex Expr) -- id [ '[' expr ']' ]
+       Identifier
+  | Brack Expr -- '(' expr ')'
+  | LitInt IntCon -- intcon
+  | LitFloat FloatCon -- floatcon
+  | LitDouble DoubleCon -- doublecon
+  | LitLong LongCon -- longcon
+  | LitChar CharCon -- charcon
+  | LitString StringCon -- strincon
+  deriving (Eq, Show)
+```
+
+From the AST it will be possible to rebuild the source code (although superfluous newlines and whitespace etc might be stripped).
+
+Our literals are given mainly using `newtypes`,
+
+```haskell
+-- | An integer literal, __intcon__, defined as:
+--     digit { digit }
+-- with _digit_ being defined as:
+--     digit	::=	0 | 1 | ... | 9
+-- FIXME: This should be a Data.Int.Int32
+newtype IntCon =
+  IntCon Int
+  deriving (Eq, Show)
+
+newtype FloatCon =
+  FloatCon Float
+  deriving (Eq, Show)
+
+newtype DoubleCon =
+  DoubleCon Double
+  deriving (Eq, Show)
+
+-- FIXME: This should be a Data.Int.Int64
+newtype LongCon =
+  LongCon Double
+  deriving (Eq, Show)
+
+-- | A character literal, __charcon__, defined as:
+--     'ch' | '\n' | '\0'
+-- where _ch_ denotes any printable ASCII character, as specified by 
+-- `isprint()`, other than \ (backslash) and ' (single quote).
+newtype CharCon =
+  CharCon Char
+  deriving (Eq, Show)
+
+-- | A string literal, __stringcon__, defined as:
+--     "{ch}"
+-- where _ch_ denotes any printable ASCII character (as specified by 
+-- `isprint()`) other than " (double quotes) and the newline character.
+newtype StringCon =
+  StringCon String
+  deriving (Eq, Show)
+
+-- | An identifier, __id__, defined as:
+--     letter { letter | digit | _ }
+-- with _letter_ being defined as:
+--     a | b | ... | z | A | B | ... | Z
+-- See `IntCon` for the definition of _digit_.
+data Identifier =
+  Identifier IsPtr
+             String
+  deriving (Eq, Show)
+```
+
+Our building blocks are represented by,
+
+```haskell
+-- | Represent either no value or one-or-many values.
+data Many a
+  = Many (NonEmpty a)
+  | Empty
+  deriving (Eq, Show)
+
+data IsPtr
+  = IsRefPtr
+  | IsDerefPtr
+  | IsNotPtr
+  deriving (Eq, Show)
+
+-- | Represent the index as an expression, or no index if it's not an array.
+data ArrayIndex a
+  = Index a
+  | NotArray
+  deriving (Eq, Show)
+
+-- | Represent if a parameter is an array or not.
+data IsArrayParameter
+  = IsArrayParm
+  | IsNotArrayParm
+  deriving (Eq, Show)
+
+-- | Represent the prototype declaration type.
+data DeclarationType
+  = Normal
+  | Extern
+  deriving (Eq, Show)
+
+-- | Unary Operators.
+data UnaryOperator
+  = BoolNegation
+  | Increment
+  | Decrement
+  deriving (Eq, Show)
+
+-- | Binary Operators.
 data BinOperator
-  = Add
-  | Sub
+  = Plus
+  | Minus
   | Mul
   | Div
+  deriving (Eq, Show)
 
- -- | The relop production
+-- | Relational Operators.
 data RelOperator
   = Equal
   | NotEqual
@@ -100,68 +312,16 @@ data RelOperator
   | LessThan
   | GreaterThanEqual
   | GreaterThan
+  deriving (Eq, Show)
 
--- | The logical_op production
+-- | Logical Operators.
 data LogicalOperator
   = And
   | Or
-
--- | The expr production
-data Expr 
-  = Neg Expr
-  | Exclamation Expr
-  | BinOp BinOperator Expr Expr
-  | RelOp RelOperator Expr Expr
-  | LogicalOp LogicalOperator Expr Expr
-  | BlockExpr Identifier (Maybe [Expr])
-  | Parens Expr
-  | LitInt Intcon
-  | LitChar Charcon
-  | LitString Stringcon
-
--- | The var_decl production
-data Variable  
-  = VarDecl Identifier Variable
-  | VarInt Identifier Intcon Variable
-  | NonVar
-
--- | The parm_types production
-data ParameterTypes
-  = VoidParameter
-  | Parameter AType Identifier ParameterTypes
-
--- | The assg production
-data Assignment 
-  = Assign Identifier (Maybe Expr) Expr
-
--- | The stmt production
-data Statement 
-  = If Expr Statement Statement
-  | While Expr Statement
-  | For Assignment Expr Assignment Statement
-  | StmtAssignment Assignment
-  | StmtExpr Identifier [Expr]
-  | Brackets Statement
-  | SemiColon
-
--- | The func production
-data Func
-  = FuncDef AType Identifier ParameterTypes AType Variable Statement
-  | FuncVoidDef Identifier ParameterTypes AType Variable Statement
-
--- | The dcl production
-data Declaration
-  = DeclVariableDeclaration AType Variable
-  | DeclFunc Extern AType [(Identifier, ParameterTypes)]
-  | DeclVoidFunc Extern [(Identifier, ParameterTypes)]
-
--- | The prog production
-data Prog
-  = Decl 
-  | Func
+  deriving (Eq, Show)
 ```
 
-From the AST it will be possible to rebuild the source code (although superfluous newlines and whitespace etc might be stripped).
+
 
 ## Typing Rules (and Internal Datastructure)
 
@@ -169,13 +329,13 @@ For the full information, see the [C-- Language Specification](https://www2.cs.a
 
 We need to keep track of several things as we parse C--.
 
-| Keep track of | Reason |
-|---------------|--------|
-| Scope | a) An identifier can only be _declared_ at most __once__ globally and __once__ locally <br> b) a function may have at most __one__ prototype i.e. defined at most __once__ <br> c) The formal parameters of a function have __scope local__ to that function |
-| Array size | An array __must__ have a non-negative size |
+| Keep track of             | Reason                                   |
+| ------------------------- | ---------------------------------------- |
+| Scope                     | a) An identifier can only be _declared_ at most __once__ globally and __once__ locally <br> b) a function may have at most __one__ prototype i.e. defined at most __once__ <br> c) The formal parameters of a function have __scope local__ to that function |
+| Array size                | An array __must__ have a non-negative size |
 | Prototypes <br> Functions | a) The prototype, if present, must __precede the definition__ of the function <br> b) The __types of the prototype must match the types of its definition__ along with parameters etc <br> c) If a __function takes no parameters__, its __prototype__ must indicate this by using the __keyword void__ in place of the formal parameters <br> d) A function whose prototype is preceded by the __keyword extern__ must __not be defined__ in the program being processed |
-| Identifiers | a) An identifier can occur at most __once__ in the list of formal parameters in a function definition <br> b) If an identifier is declared to have scope local to a function, then all uses of that identifier within that function refer to this local entity; if not, but it's defined globally, then it will refer to the global instance |
-| Variables | Variables must be __declared before they are used__ |
+| Identifiers               | a) An identifier can occur at most __once__ in the list of formal parameters in a function definition <br> b) If an identifier is declared to have scope local to a function, then all uses of that identifier within that function refer to this local entity; if not, but it's defined globally, then it will refer to the global instance |
+| Variables                 | Variables must be __declared before they are used__ |
 
 ### Symbol Table
 
@@ -189,9 +349,9 @@ With the above in mind we settle on using a a `Map`, which in Haskell is based o
 
 First an overview of all the components are presented, in the table below, and then each symbol type is explained further using Haskell code examples of the (possible) implementations of these.
 
-| | Symbol Name | Type | Scope | Attributes | Location |
-|--|-------------|------|-------|------------|---------|
-| __Type name__ | `SymbolName` | `SymbolType` <br>  | `SymbolScope` <br>  | `SymbolAttribute` | `SymbolLocation` |
+|                 | Symbol Name                              | Type                                     | Scope                                    | Attributes                               | Location                                 |
+| --------------- | ---------------------------------------- | ---------------------------------------- | ---------------------------------------- | ---------------------------------------- | ---------------------------------------- |
+| __Type name__   | `SymbolName`                             | `SymbolType` <br>                        | `SymbolScope` <br>                       | `SymbolAttribute`                        | `SymbolLocation`                         |
 | __Explanation__ | The name of the symbol,<br> e.g. `foobar`, `i`, `sum`. | What type of symbol are we are dealing with, a function, a declaration, an identifier etc. | What our scope is: either global or local to a specific item (e.g. function). More specifically, a function will keep a nested `SymbolTable` which contains the items inside the scope of the function. | The symbol attributes contain additional information about a symbol, such as function parameters, return types etc. | The location of the symbol, such as file and line:column number |
 
 __Symbol Table__ is defined as,
@@ -276,7 +436,7 @@ data ValueType
   = ValueInt Int32 -- int is 32 bit
   | ValueChar Word8 -- a char is 8 bits
   | ValueString ByteString -- a string is an array of chars (`ByteString` is a list of `Word8`)
-  | ValueIntArray (Array i Int32) –- an array of ints
+  | ValueIntArray (Array i Int32) -- an array of ints
   | ValueReturnVoid -- the void return value
 
 -- | The identifier name is simply a string representing the name.

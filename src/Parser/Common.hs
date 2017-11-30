@@ -1,6 +1,14 @@
 module Parser.Common where
 
-import Data.List.NonEmpty
+import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as NonE
+
+
+manyToList :: Many a -> [a]
+manyToList m = 
+  case m of
+    Empty -> []
+    Many ms -> NonE.toList ms
 
 -- | Represent either no value or one-or-many values.
 data Many a
@@ -8,11 +16,11 @@ data Many a
   | Empty
   deriving (Eq, Show)
 
--- | Represent the index as an expression, or no index if it's not an array.
-data ArrayIndex a
-  = Index a
-  | NotArray
-  deriving (Eq, Show)
+data IsPtr
+  = IsRefPtr
+  | IsDerefPtr
+  | IsNotPtr
+  deriving (Eq, Show, Ord)
 
 -- | Represent if a parameter is an array or not.
 data IsArrayParameter
@@ -21,14 +29,16 @@ data IsArrayParameter
   deriving (Eq, Show)
 
 -- | Represent the prototype declaration type.
-data DeclarationType
+data Visibility
   = Normal
   | Extern
   deriving (Eq, Show)
 
 -- | Unary Operators.
-data UnaryOperator =
-  BoolNegation
+data UnaryOperator
+  = BoolNegation
+  | Increment
+  | Decrement
   deriving (Eq, Show)
 
 -- | Binary Operators.

@@ -25,6 +25,9 @@ instance Pretty TType where
     case e of
       TTypeChar -> text "char"
       TTypeInt -> text "int"
+      TTypeFloat -> text "float"
+      TTypeDouble -> text "double"
+      TTypeLong -> text "long"
       TTypeVoid -> text "void"
 
 instance Pretty Token where
@@ -38,6 +41,9 @@ instance Pretty Token where
       TokenMultiLineComment mulCom -> text mulCom
       TokenId i -> ppr p i
       TokenInt i -> ppr p i
+      TokenFloat i -> ppr p i
+      TokenDouble i -> ppr p i
+      TokenLong i -> ppr p i
       TokenChar c -> ppr p c
       TokenString s -> ppr p s
       TokenAssign -> text "="

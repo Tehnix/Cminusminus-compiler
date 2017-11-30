@@ -1,8 +1,15 @@
+{-# LANGUAGE FlexibleInstances #-}
+
 module Render.Syntax where
 
+import Prelude hiding (exp)
+
+import Data.List.NonEmpty
 import Text.PrettyPrint
+import qualified Data.Map.Strict as Map
 
 import Parser.Common
+import Parser.Literal
 import Parser.Syntax
 import Render.Common
 
@@ -10,111 +17,142 @@ import Render.Common
 renderProg :: Prog -> String
 renderProg = render . ppr 0
 
+instance Pretty ArrayIndex where
+  ppr p e =
+    case e of
+      Index index -> brackets (ppr p index)
+      NotArray -> empty
+
 instance Pretty VarDeclaration where
   ppr p e =
     case e of
-      Var i index -> ppr p i <> ppr p index
+      Var ident index -> ppr p ident <> ppr p index
 
 instance Pretty Type where
   ppr p e =
     case e of
       TypeChar -> text "char" <> space
       TypeInt -> text "int" <> space
+      TypeFloat -> text "float" <> space
+      TypeDouble -> text "double" <> space
+      TypeLong -> text "long" <> space
+      TypeVoid -> text "void" <> space
+      TypeArray ty -> text "*" <> ppr p ty
 
-instance Pretty ParmTypes where
+instance Pretty Parameter where
   ppr p e =
     case e of
-      ParmTypeVoid -> text "void"
-      ParmTypes parms -> ppr p parms
+      EmptyParam -> text "void"
+      Param parms -> ppr p (Map.toList parms)
 
-instance Pretty ParmType where
+instance Pretty (Identifier, Type) where
   ppr p e =
     case e of
-      ParmType t i isArray -> ppr p t <> space <> ppr p i <> ppr p isArray
+      (ident, (TypeArray ty)) ->
+        ppr p ty <> space <> ppr p ident <> lbrack <> rbrack
+      (ident, ty) ->
+        ppr p ty <> space <> ppr p ident
 
 instance Pretty Assignment where
   ppr p e =
     case e of
-      AssignId i index e -> ppr p i <> ppr p index <> equals <> ppr p e
+      AssignId ty ident index exp ->
+        ppr p ty <> ppr p ident <> ppr p index <> equals <> ppr p exp
+      PrefixInc ident -> text "++" <> ppr p ident
+      PostfixInc ident -> ppr p ident <> text "++"
+      PrefixDec ident -> text "--" <> ppr p ident
+      PostfixDec ident -> ppr p ident <> text "--"
 
 instance Pretty Expr where
   ppr p e =
     case e of
-      Negate e -> text "-" <> ppr p e
-      NegateBool e -> text "!" <> ppr p e
-      BinOp op e1 e2 -> ppr p e1 <> ppr p op <> ppr p e2
-      RelOp op e1 e2 -> ppr p e1 <> ppr p op <> ppr p e2
-      LogOp op e1 e2 -> ppr p e1 <> ppr p op <> ppr p e2
-      IdFun i e -> ppr p i <> parens (ppr p e)
-      Id index i -> ppr p i <> ppr p index
-      Brack e -> parens $ ppr p e
+      Negate exp -> text "-" <> ppr p exp
+      NegateBool exp -> text "!" <> ppr p exp
+      BinOp op exp1 exp2 -> ppr p exp1 <> ppr p op <> ppr p exp2
+      RelOp op exp1 exp2 -> ppr p exp1 <> ppr p op <> ppr p exp2
+      LogOp op exp1 exp2 -> ppr p exp1 <> ppr p op <> ppr p exp2
+      IdFun ident exp -> ppr p ident <> parens (pprs comma p exp)
+      Id index ident -> ppr p ident <> ppr p index
+      Brack exp -> parens $ ppr p exp
       LitInt i -> ppr p i
+      LitFloat i -> ppr p i
+      LitDouble i -> ppr p i
+      LitLong i -> ppr p i
       LitChar c -> ppr p c
       LitString s -> ppr p s
 
 instance Pretty Stmt where
   ppr p e =
     case e of
-      If e s ->
-        newline <> indent p <> text "if" <> space <> parens (ppr p e) <> space <>
-        ppr p s
-      IfElse e s1 s2 ->
-        newline <> indent p <> text "if" <> space <> parens (ppr p e) <> space <>
-        ppr p s1 <>
+      If exp stmt ->
+        newline <> indent p <> text "if" <> space <> parens (ppr p exp) <> space <>
+        ppr p stmt
+      IfElse exp stmt1 stmt2 ->
+        newline <> indent p <> text "if" <> space <> parens (ppr p exp) <> space <>
+        ppr p stmt1 <>
         space <>
         text "else" <>
         space <>
-        ppr p s2
-      While e s ->
-        newline <> indent p <> text "while" <> parens (ppr p e) <> ppr p s
-      For a1 e a2 s ->
+        ppr p stmt2
+      While exp stmt ->
+        newline <> indent p <> text "while" <> parens (ppr p exp) <> space <>
+        ppr p stmt
+      For a1 exp a2 stmt ->
         newline <> indent p <> text "for" <>
-        parens (ppr p a1 <> semi <> ppr p e <> semi <> ppr p a2) <>
-        ppr p s
-      StmtAssgn a -> newline <> indent p <> ppr p a <> semi
-      Return e ->
-        newline <> indent p <> text "return" <> space <> ppr p e <> semi
-      StmtId i e ->
-        newline <> indent p <> ppr p i <> parens (ppr p e) <> newlineSemi
-      StmtBlock s -> newlineBraces p (ppr (p + tabWidth) s)
+        parens
+          (ppr p a1 <> semi <> space <> ppr p exp <> semi <> space <> ppr p a2) <>
+        space <>
+        ppr p stmt
+      StmtAssgn assgn -> newline <> indent p <> ppr p assgn <> semi
+      Return exp ->
+        newline <> indent p <> text "return" <> space <> ppr p exp <> semi
+      StmtId ident exp ->
+        newline <> indent p <> ppr p ident <> parens (ppr p exp) <> newlineSemi
+      StmtBlock stmt ->
+        lbrace <> (ppr (p + tabWidth) stmt) <> newline <> indent p <> rbrace
       EmptyStmt -> indent p <> semi
 
 instance Pretty FunVarDcl where
   ppr p e =
     case e of
       FunVarDcl Empty -> empty
-      FunVarDcl vs -> ppr p vs <> semi
+      FunVarDcl (Many (v :| vs)) -> ppr p v <> semi <> newline <> ppr p vs
+
+instance Pretty [FunVarTypeDcl] where
+  ppr p e =
+    case e of
+      [] -> empty
+      (FunVarTypeDcl ty vars:[]) -> indent p <> ppr p ty <> ppr p vars <> semi
+      (fv:fvs) -> ppr p [fv] <> newline <> ppr p fvs
 
 instance Pretty FunVarTypeDcl where
   ppr p e =
     case e of
-      FunVarTypeDcl t v -> ppr p t <> ppr p v
+      FunVarTypeDcl ty vars -> ppr p ty <> ppr p vars
 
 instance Pretty Function where
   ppr p e =
     case e of
-      Fun t i parms v s ->
-        ppr p t <> space <> ppr p i <> parens (ppr p parms) <> space <>
-        newlineBraces p (ppr (p + tabWidth) v <> ppr (p + tabWidth) s)
-      FunVoid i parms v s ->
-        text "void" <> space <> ppr p i <> parens (ppr p parms) <> space <>
-        newlineBraces p (ppr (p + tabWidth) v <> ppr (p + tabWidth) s)
+      Fun ty ident parms varDecl stmt ->
+        ppr p ty <> ppr p ident <> parens (ppr p parms) <> space <>
+        newlineBraces
+          (p + tabWidth)
+          (ppr (p + tabWidth) varDecl <> ppr (p + tabWidth) stmt)
 
 instance Pretty DclParmDcl where
   ppr p e =
     case e of
-      DclParmDcl i parms -> ppr p i <> parens (ppr p parms)
+      DclParmDcl ident parms -> ppr p ident <> parens (ppr p parms)
 
 instance Pretty Declaration where
   ppr p e =
     case e of
-      Dcl dt t parms -> ppr p dt <> ppr p t <> ppr p parms
-      DclVoid dt parms -> ppr p dt <> ppr p parms
-      DclVar t v -> ppr p t <> ppr p v
+      Dcl visibility ty parms -> ppr p visibility <> ppr p ty <> ppr p parms
+      DclVar visibility ty var -> ppr p visibility <> ppr p ty <> ppr p var
 
 instance Pretty Prog where
   ppr p e =
     case e of
-      Decl d parms -> ppr p d <> newlineSemi <> newline <> ppr p parms
-      Func f parms -> ppr p f <> ppr p parms
+      Decl dcl prog -> ppr p dcl <> newlineSemi <> newline <> ppr p prog
+      Func func prog -> ppr p func <> ppr p prog
       EOF -> empty
