@@ -20,6 +20,8 @@ dependencies:
 - pretty
 - containers
 - pretty-simple
+- haskeline
+- split
 
 library:
   source-dirs: src
@@ -33,6 +35,7 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     - -fwarn-incomplete-patterns
+    - -Wnoncanonical-monad-instances
     dependencies:
     - cminusminus
 

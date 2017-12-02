@@ -39,6 +39,7 @@ instance Pretty Token where
       TokenLogicalOp logOp -> ppr p logOp
       TokenComment com -> text com
       TokenMultiLineComment mulCom -> text mulCom
+      TokenPrintf -> text "printf"
       TokenId i -> ppr p i
       TokenInt i -> ppr p i
       TokenFloat i -> ppr p i

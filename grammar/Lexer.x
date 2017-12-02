@@ -82,6 +82,7 @@ tokens :-
   @digit                            { \p s -> (TokenInt (IntCon (read s)), p) }
   @char                             { \p s -> (TokenChar (CharCon (stripChar s)), p) }
   @string                           { \p s -> (TokenString (StringCon (stripString s)), p) }
+  "printf"                          { \p s -> (TokenPrintf, p) }
   "*" @identifier                   { \p s -> (TokenId (Identifier IsDerefPtr (tail s)), p) }
   "&" @identifier                   { \p s -> (TokenId (Identifier IsRefPtr (tail s)), p) }
   @identifier                       { \p s -> (TokenId (Identifier IsNotPtr s), p) }

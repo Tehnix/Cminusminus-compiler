@@ -18,8 +18,9 @@ import qualified Parser.Lexer as Lexer
 {- %lexer { Lexer.lexer } { EOF } -}
 
 {- As with the lexer, all our terminals have to be specified here as well. -}
-%token 
+%token
       {- Literals. -}
+      'printf'        { (TokenPrintf, _) }
       id              { (TokenId $$, _) }
       intcon          { (TokenInt $$, _) }
       floatcon        { (TokenFloat $$, _) }
@@ -70,6 +71,9 @@ import qualified Parser.Lexer as Lexer
       'double'        { (TokenType TTypeDouble, _) }
       'long'          { (TokenType TTypeLong, _) }
       'void'          { (TokenType TTypeVoid, _) }
+      {- Commnets -}
+      lineCom         { (TokenComment $$, _) }
+      multiLineCom    { (TokenMultiLineComment $$, _) }
 
 {- Set precedence for the tokens. -}
 %left '||'
@@ -78,10 +82,11 @@ import qualified Parser.Lexer as Lexer
 %left '<' '<=' '>' '>='
 %left '+' '-'
 %left '*' '/'
-%right NEG '!' 
+%right NEG '!'
 %right '--' '++'
-%right '{'
+%left '}'
 %right 'else'
+
 
 %%
 
@@ -117,15 +122,15 @@ parm_types :: { Parameter }
 parm_types  : 'void'                            { EmptyParam }
             | some_parm_type                    { Param (Map.fromList $1) }
 
-func :: { Function } 
-func  : type id '(' parm_types ')' '{' many_fun_var_decl many_stmt '}'  
+func :: { Function }
+func  : type id '(' parm_types ')' '{' many_fun_var_decl many_stmt '}'
                                                 { Fun $1 $2 $4 (funVarToMany $7) (listToMany $8) }
 
-stmt :: { Stmt } 
+stmt :: { Stmt }
 stmt  : 'if' '(' expr ')' stmt_block                    { If $3 $5 }
       | 'if' '(' expr ')' stmt_block 'else' stmt_block  { IfElse $3 $5 $7 }
       | 'while' '(' expr ')' stmt_block                 { While $3 $5 }
-      | 'for' '(' maybe_assg ';' maybe_expr 
+      | 'for' '(' maybe_assg ';' maybe_expr
               ';' maybe_assg ')' stmt_block             { For $3 $5 $7 $9 }
       | stmt_block                                      { $1 }
 
@@ -137,7 +142,10 @@ stmt_block  : assg ';'                                   { StmtAssgn $1 }
             | '{' many_stmt '}'                          { StmtBlock (listToMany $2) }
             | 'return' maybe_expr ';'                    { Return $2 }
             | id '(' many_expr ')' ';'                   { StmtId $1 (listToMany $3) }
+            | 'printf' '(' many_expr ')' ';'             { StmtPrintf (listToMany $3) }
             | ';'                                        { EmptyStmt }
+            | lineCom                                    { EmptyStmt }
+            | multiLineCom                               { EmptyStmt }
 
 assg :: { Assignment }
 assg  : id '[' expr ']' '=' expr                { AssignId Nothing $1 (Index $3) $6 }
@@ -179,28 +187,28 @@ expr  : '-' expr %prec NEG                      { Negate $2 }
 
 
 
-{- An optional `stmt`, i.e. zero or many. In a grammar production this'll 
+{- An optional `stmt`, i.e. zero or many. In a grammar production this'll
 look something like: { stmt }
 -}
 many_stmt :: { [Stmt] }
 many_stmt  : stmt many_stmt          { $1 : $2 }
            | {- empty -}             { [] }
 
-{- An optional `assg`, i.e. zero or one. In a grammar production this'll 
+{- An optional `assg`, i.e. zero or one. In a grammar production this'll
 look something like: [ assg ]
 -}
 maybe_assg :: { Maybe Assignment }
 maybe_assg : assg                    { Just $1 }
            | {- empty -}             { Nothing }
 
-{- An optional `expr`, i.e. zero or one. In a grammar production this'll 
+{- An optional `expr`, i.e. zero or one. In a grammar production this'll
 look something like: [ expr ]
 -}
 maybe_expr :: { Maybe Expr }
 maybe_expr : expr                    { Just $1 }
            | {- empty -}             { Nothing }
 
-{- Either zero `expr`, i.e. zero or many. In a grammar production this'll 
+{- Either zero `expr`, i.e. zero or many. In a grammar production this'll
 look something like: [expr { ',' expr } ]
 -}
 many_expr :: { [Expr] }
@@ -239,16 +247,16 @@ many_fun_var_decl : type some_var_decl ';' many_fun_var_decl { ($1, $2) : $4 }
 {
 
 -- | Convert a list to a `Many`, which is either `Empty` or a `NonEmpty a`.
-listToMany :: [a] -> Many a   
+listToMany :: [a] -> Many a
 listToMany [] = Empty
 listToMany as = Many (NonE.fromList as)
 
--- | Construct the `FunctionVarDeclaration`. Note that we rely on 
+-- | Construct the `FunctionVarDeclaration`. Note that we rely on
 -- `some_var_decl` to never be an empty list!
 funVarToMany :: [(Type, [VarDeclaration])] -> FunVarDcl
 funVarToMany []      = FunVarDcl Empty
 funVarToMany as      = FunVarDcl $ Many $ NonE.fromList $ sndToSome as
-  where 
+  where
     sndToSome :: [(Type, [VarDeclaration])] -> [FunVarTypeDcl]
     sndToSome [] = []
     sndToSome ((t, vs):vds) = FunVarTypeDcl t (NonE.fromList vs) : sndToSome vds

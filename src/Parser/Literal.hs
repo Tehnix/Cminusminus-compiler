@@ -26,7 +26,7 @@ newtype LongCon =
 
 -- | A character literal, __charcon__, defined as:
 --     'ch' | '\n' | '\0'
--- where _ch_ denotes any printable ASCII character, as specified by 
+-- where _ch_ denotes any printable ASCII character, as specified by
 -- `isprint()`, other than \ (backslash) and ' (single quote).
 newtype CharCon =
   CharCon Char
@@ -34,7 +34,7 @@ newtype CharCon =
 
 -- | A string literal, __stringcon__, defined as:
 --     "{ch}"
--- where _ch_ denotes any printable ASCII character (as specified by 
+-- where _ch_ denotes any printable ASCII character (as specified by
 -- `isprint()`) other than " (double quotes) and the newline character.
 newtype StringCon =
   StringCon String
@@ -48,4 +48,11 @@ newtype StringCon =
 data Identifier =
   Identifier IsPtr
              String
-  deriving (Eq, Show, Ord)
+  deriving (Show)
+
+-- We want identifiers to match on name, so we implement our own equality/ordering
+-- instances.
+instance Eq Identifier where
+  (Identifier _ name1) == (Identifier _ name2) = name1 == name2
+instance Ord Identifier where
+  (Identifier _ name1) `compare` (Identifier _ name2) = name1 `compare` name2

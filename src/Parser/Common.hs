@@ -3,9 +3,8 @@ module Parser.Common where
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NonE
 
-
 manyToList :: Many a -> [a]
-manyToList m = 
+manyToList m =
   case m of
     Empty -> []
     Many ms -> NonE.toList ms

@@ -57,6 +57,7 @@ data FunVarTypeDcl =
 -- | Grammar Production: _type_.
 data Type
   = TypeChar -- char
+  | TypeString -- string
   | TypeInt -- int
   | TypeFloat -- float
   | TypeDouble -- double
@@ -85,9 +86,10 @@ data Stmt
         (Maybe Assignment)
         Stmt
   | StmtAssgn Assignment -- assg ';'
-  | Return (Maybe Expr) -- 	return [ expr ] ';'
-  | StmtId Identifier -- 	id '(' [expr { ',' expr } ] ')' ';'
+  | Return (Maybe Expr) -- return [ expr ] ';'
+  | StmtId Identifier -- id '(' [expr { ',' expr } ] ')' ';'
            (Many Expr)
+  | StmtPrintf (Many Expr) -- 'printf' '(' [expr { ',' expr } ] ')' ';'
   | StmtBlock (Many Stmt) -- '{' { stmt } '}'
   | EmptyStmt -- ';'
   deriving (Eq, Show)

@@ -6,7 +6,7 @@
 %left '*' '/'
 %right NEG '!'
 %right '--' '++'
-%right '{'
+%left '}'
 %right 'else'
 
 prog
@@ -50,7 +50,10 @@ stmt_block
   | '{' many_stmt '}'
   | 'return' maybe_expr ';'
   | id '(' many_expr ')' ';'
+  | 'printf' '(' many_expr ')' ';'
   | ';'
+  | lineCom
+  | multiLineCom
 
 assg
   : id '[' expr ']' '=' expr

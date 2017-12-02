@@ -33,10 +33,11 @@ data TType
 data Token
   = TokenBinOp BinOperator
   | TokenUnaryOp UnaryOperator
-  | TokenRelOp RelOperator -- 
+  | TokenRelOp RelOperator --
   | TokenLogicalOp LogicalOperator -- logical_op
   | TokenComment String -- // comments
   | TokenMultiLineComment String -- /* comments */
+  | TokenPrintf -- 'printf'
   | TokenId Identifier -- id
   | TokenInt IntCon -- intcon
   | TokenFloat FloatCon -- floatcon

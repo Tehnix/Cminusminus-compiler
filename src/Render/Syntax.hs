@@ -32,6 +32,7 @@ instance Pretty Type where
   ppr p e =
     case e of
       TypeChar -> text "char" <> space
+      TypeString -> text "string" <> space
       TypeInt -> text "int" <> space
       TypeFloat -> text "float" <> space
       TypeDouble -> text "double" <> space
@@ -108,6 +109,8 @@ instance Pretty Stmt where
         newline <> indent p <> text "return" <> space <> ppr p exp <> semi
       StmtId ident exp ->
         newline <> indent p <> ppr p ident <> parens (ppr p exp) <> newlineSemi
+      StmtPrintf exp ->
+        newline <> indent p <> text "printf" <> parens (ppr p exp) <> newlineSemi
       StmtBlock stmt ->
         lbrace <> (ppr (p + tabWidth) stmt) <> newline <> indent p <> rbrace
       EmptyStmt -> indent p <> semi
