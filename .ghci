@@ -1,3 +1,2 @@
 :set -fwarn-incomplete-patterns
 :set -Wnoncanonical-monad-instances
-:load Main

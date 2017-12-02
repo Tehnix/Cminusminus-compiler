@@ -62,7 +62,6 @@ data LiteralValue
   | CharVal Char
   | StringVal String
   | ArrayVal [LiteralValue]
-  deriving (Eq, Ord)
 
 type ExecLineNoIncrease = Int
 type ExecLineNo = Int
@@ -78,6 +77,50 @@ instance Show LiteralValue where
   show (CharVal n) = show n
   show (StringVal n) = show n
   show (ArrayVal n) = show n
+
+instance Eq LiteralValue where
+  (IntVal i1) == (IntVal i2) = i1 == i2
+  (FloatVal i1) == (FloatVal i2) = i1 == i2
+  (DoubleVal i1) == (DoubleVal i2) = i1 == i2
+  (LongVal i1) == (LongVal i2) = i1 == i2
+  (FloatVal i1) == (IntVal i2) = i1 == fromIntegral i2
+  (IntVal i1) == (FloatVal i2) = fromIntegral i1 == i2
+  (DoubleVal i1) == (IntVal i2) = i1 == (float2Double $ fromIntegral i2)
+  (IntVal i1) == (DoubleVal i2) = (float2Double $ fromIntegral i1) == i2
+  (DoubleVal i1) == (FloatVal i2) = i1 == float2Double i2
+  (FloatVal i1) == (DoubleVal i2) = float2Double i1 == i2
+  (LongVal i1) == (IntVal i2) = i1 == (float2Double $ fromIntegral i2)
+  (IntVal i1) == (LongVal i2) = (float2Double $ fromIntegral i1) == i2
+  (LongVal i1) == (FloatVal i2) = i1 == float2Double i2
+  (LongVal i1) == (DoubleVal i2) = i1 == i2
+  (DoubleVal i1) == (LongVal i2) = i1 == i2
+  (FloatVal i1) == (LongVal i2) = float2Double i1 == i2
+  (StringVal s1) == (StringVal s2) = s1 == s2
+  (CharVal c1) == (CharVal c2) = c1 == c2
+  (ArrayVal l1) == (ArrayVal l2) = l1 == l2
+  _ == _ = False
+
+instance Ord LiteralValue where
+  (IntVal i1) `compare` (IntVal i2) = i1 `compare` i2
+  (FloatVal i1) `compare` (FloatVal i2) = i1 `compare` i2
+  (DoubleVal i1) `compare` (DoubleVal i2) = i1 `compare` i2
+  (LongVal i1) `compare` (LongVal i2) = i1 `compare` i2
+  (FloatVal i1) `compare` (IntVal i2) = i1 `compare` fromIntegral i2
+  (IntVal i1) `compare` (FloatVal i2) = fromIntegral i1 `compare` i2
+  (DoubleVal i1) `compare` (IntVal i2) = i1 `compare` (float2Double $ fromIntegral i2)
+  (IntVal i1) `compare` (DoubleVal i2) = (float2Double $ fromIntegral i1) `compare` i2
+  (DoubleVal i1) `compare` (FloatVal i2) = i1 `compare` float2Double i2
+  (FloatVal i1) `compare` (DoubleVal i2) = float2Double i1 `compare` i2
+  (LongVal i1) `compare` (IntVal i2) = i1 `compare` (float2Double $ fromIntegral i2)
+  (IntVal i1) `compare` (LongVal i2) = (float2Double $ fromIntegral i1) `compare` i2
+  (LongVal i1) `compare` (FloatVal i2) = i1 `compare` float2Double i2
+  (LongVal i1) `compare` (DoubleVal i2) = i1 `compare` i2
+  (DoubleVal i1) `compare` (LongVal i2) = i1 `compare` i2
+  (FloatVal i1) `compare` (LongVal i2) = float2Double i1 `compare` i2
+  (StringVal s1) `compare` (StringVal s2) = s1 `compare` s2
+  (CharVal c1) `compare` (CharVal c2) = c1 `compare` c2
+  (ArrayVal l1) `compare` (ArrayVal l2) = l1 `compare` l2
+  _ `compare` _ = False `compare` True
 
 instance Show TraceValue where
   show TraceNotAssigned = "N/A"

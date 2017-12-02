@@ -27,7 +27,7 @@ library:
   source-dirs: src
 
 executables:
-  cminusminus-exe:
+  c-repl:
     main:                Main.hs
     source-dirs:         app
     ghc-options:

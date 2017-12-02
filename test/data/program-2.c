@@ -45,7 +45,6 @@ int main(void) {
     // }
     mark[2] = 5;
     mark[3] = 8;
-    h = avg(10, mark); // Test.
     h = 1 + 2.0;
     printf("Testing:\n");
     printf("  Int = %d\n", 5);
