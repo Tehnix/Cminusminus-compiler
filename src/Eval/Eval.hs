@@ -7,6 +7,7 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Text.Pretty.Simple (pPrint)
 import Text.Read (readMaybe)
+import Data.Maybe (fromMaybe)
 import Control.Monad (zipWithM)
 import System.Console.Haskeline
 import Control.Monad.IO.Class
@@ -47,7 +48,7 @@ executionLines _ = error "Error: You can only execute functions!"
 instance Eval Parameter where
   eval _ stepsToTake symTable EmptyParam = pure (0, stepsToTake-1, symTable)
   eval execLine stepsToTake (SymbolTable parent symData) (Param parms) =
-    pure $ (0, stepsToTake-1, SymbolTable { symbolTableParent = parent
+    pure (0, stepsToTake-1, SymbolTable { symbolTableParent = parent
                        , symbolTableAttrMap = Map.unionWith mergeAttr symData parmsAttr
                        })
     where
@@ -59,7 +60,7 @@ instance Eval Parameter where
 
 instance Eval FunVarTypeDcl where
   eval execLine stepsToTake (SymbolTable parent symData) (FunVarTypeDcl ty varDcls) =
-    pure $ (0, stepsToTake-1, SymbolTable { symbolTableParent = parent
+    pure (0, stepsToTake-1, SymbolTable { symbolTableParent = parent
                        , symbolTableAttrMap = Map.unionWith mergeAttr symData varAttr
                        })
     where
@@ -78,7 +79,7 @@ instance Eval Stmt where
                                 , symbolTableAttrMap = Map.unionWith mergeAttr symData extendedMap
                                 })
     where
-      exprVal expr = evalExpr execLine stepsToTake symTable expr
+      exprVal = evalExpr execLine stepsToTake symTable
 
       traceHistory :: LiteralValue -> TraceHistory
       traceHistory val = TraceHistory {executionLine = execLine, traceValue = TraceValue val}
@@ -113,8 +114,8 @@ instance Eval Stmt where
         let exLineNoInc = newExLineNo - execLine
         -- newSymTable <- eval execLine (SymbolTable parent symData) s
         case symbolTableParent scopeSymbolTable of
-          Nothing -> pure $ (exLineNoInc, stepsLeft, Right Map.empty)
-          Just parentSymbolTable -> pure $ (exLineNoInc, stepsLeft, Left parentSymbolTable)
+          Nothing -> pure (exLineNoInc, stepsLeft, Right Map.empty)
+          Just parentSymbolTable -> pure (exLineNoInc, stepsLeft, Left parentSymbolTable)
 
       attrUpdater :: (LiteralValue -> LiteralValue) -> TraceValue -> SymbolAttr
       attrUpdater f tValue =
@@ -129,7 +130,7 @@ instance Eval Stmt where
           Return Nothing -> pure (0, stepsToTake-1, Right Map.empty)
           Return (Just expr) -> do
             val <- exprVal expr
-            pure $ (0, stepsToTake-1, Right $ Map.fromList [(returnValueId, ReturnValueAttr val)])
+            pure (0, stepsToTake-1, Right $ Map.fromList [(returnValueId, ReturnValueAttr val)])
           -- TODO: Test stmt assignment on arrays.
           StmtAssgn (AssignId mTy ident@(Identifier _ name) isArray expr) -> do
             v <- exprVal expr
@@ -143,16 +144,16 @@ instance Eval Stmt where
                     pure $ ArrayVal updateArray
                   _ -> error "Error: Trying to access index with non-integer!"
             debug $ "Assigning " ++ name ++ " = " ++ show val ++ ";"
-            pure $ (0, stepsToTake-1, Left $ recUpdateIdent ident execLine val symTable)
+            pure (0, stepsToTake-1, Left $ recUpdateIdent ident execLine val symTable)
           -- FIXME: Handle statements like `int a = x++;` i.e. assignment with assignment in expr.
-          StmtAssgn (PrefixInc ident) -> do
-            pure $ (0, stepsToTake-1, Left $ recUpdateIdentWith ident (attrUpdater incrementE) symTable)
-          StmtAssgn (PostfixInc ident) -> do
-            pure $ (0, stepsToTake-1, Left $ recUpdateIdentWith ident (attrUpdater incrementE) symTable)
-          StmtAssgn (PrefixDec ident) -> do
-            pure $ (0, stepsToTake-1, Left $ recUpdateIdentWith ident (attrUpdater decrementE) symTable)
-          StmtAssgn (PostfixDec ident) -> do
-            pure $ (0, stepsToTake-1, Left $ recUpdateIdentWith ident (attrUpdater decrementE) symTable)
+          StmtAssgn (PrefixInc ident) ->
+            pure (0, stepsToTake-1, Left $ recUpdateIdentWith ident (attrUpdater incrementE) symTable)
+          StmtAssgn (PostfixInc ident) ->
+            pure (0, stepsToTake-1, Left $ recUpdateIdentWith ident (attrUpdater incrementE) symTable)
+          StmtAssgn (PrefixDec ident) ->
+            pure (0, stepsToTake-1, Left $ recUpdateIdentWith ident (attrUpdater decrementE) symTable)
+          StmtAssgn (PostfixDec ident) -> 
+            pure (0, stepsToTake-1, Left $ recUpdateIdentWith ident (attrUpdater decrementE) symTable)
           If expr s -> do
             debug "Inside if"
             val <- exprVal expr
@@ -161,7 +162,7 @@ instance Eval Stmt where
                 -- Before going in, we increment execLine by 1 to factor in the `if ...` line.
                 (exLinNoInc, stepsLeft, eSym) <- enterStatement (execLine+1) stepsToTake symTable [s]
                 -- And once more after because of the ending `}`.
-                pure $ (exLinNoInc+1, stepsLeft, eSym)
+                pure (exLinNoInc+1, stepsLeft, eSym)
               else pure (0, stepsToTake-1, Right Map.empty)
           IfElse expr s1 s2 -> do
             debug "Inside if-else"
@@ -170,7 +171,7 @@ instance Eval Stmt where
             -- Before going in, we increment execLine by 1 to factor in the `if/else ...` line.
             (exLinNoInc, stepsLeft, eSym) <- enterStatement (execLine+1) stepsToTake symTable [s]
             -- And once more after because of the ending `}`.
-            pure $ (exLinNoInc+1, stepsLeft, eSym)
+            pure (exLinNoInc+1, stepsLeft, eSym)
           StmtBlock Empty -> pure (0, stepsToTake, Right Map.empty)
           StmtBlock (Many ss) -> enterStatement execLine stepsToTake symTable (NonE.toList ss)
           StmtId (Identifier _ funName) parmExprs -> do
@@ -191,22 +192,21 @@ instance Eval Stmt where
                             -- TODO: Type check the parameters.
                             let mergParams parmExpr (ident, ty) = do
                                   val <- exprVal parmExpr
-                                  pure $ (ident, IdentifierAttr (Just ty) NotArray [traceHistory val])
+                                  pure (ident, IdentifierAttr (Just ty) NotArray [traceHistory val])
                             parmVals <- zipWithM mergParams (manyToList parmExprs) (Map.toList parmMap)
                             pure $ Map.fromList parmVals
                 let funSymbolTable = stepIntoScopeWithMap globalSymbolTable initialSymData
                     ex = executionLines funAttr
                 (newExLineNo, stepsLeft, _, _) <- scopedRepl funSymbolTable stepsToTake 0 ex
-                pure $ (newExLineNo, stepsLeft, Right Map.empty)
+                pure (newExLineNo, stepsLeft, Right Map.empty)
               Just _ -> error $ "Error while trying to call function '" ++ funName ++ ": Identifier is not a function!"
-          StmtPrintf Empty -> pure $ (0, stepsToTake-1, Right Map.empty)
+          StmtPrintf Empty -> pure (0, stepsToTake-1, Right Map.empty)
           StmtPrintf (Many parmExprs) -> do
             -- TODO: Type check the parameters.
             parms <- mapM (evalExpr execLine stepsToTake symTable) parmExprs
             case NonE.toList parms of
-              [] -> error $ "Error while trying to call function 'printf': Incorrect number of arguments, expected at least 1 but was given 0"
-              (format:ps) -> do
-                sPrintfList format ps
+              [] -> error "Error while trying to call function 'printf': Incorrect number of arguments, expected at least 1 but was given 0"
+              (format:ps) -> sPrintfList format ps
             pure (0, stepsToTake-1, Right Map.empty)
           While expr s -> do
             debug "Inside while"
@@ -228,7 +228,7 @@ instance Eval Stmt where
             case mAssgnInital of
               Nothing -> loop 1 stepsToTake symTable
               Just initAssgn -> do
-                (_, _, eSym) <- enterStatement (execLine) stepsToTake symTable [StmtAssgn initAssgn]
+                (_, _, eSym) <- enterStatement execLine stepsToTake symTable [StmtAssgn initAssgn]
                 case eSym of
                   Left upSym -> loop 1 stepsToTake upSym
                   Right exSym -> loop 1 stepsToTake $ SymbolTable parent (Map.unionWith mergeAttr symData exSym)
@@ -245,10 +245,10 @@ instance Eval Stmt where
                     case mAssign of
                       Nothing -> loop exLinNoInc stepsLeft exprSymTable
                       Just postAssign -> do
-                        (_, _, pAssgnSym) <- enterStatement (execLine) (stepsLeft+1) exprSymTable [StmtAssgn postAssign]
+                        (_, _, pAssgnSym) <- enterStatement execLine (stepsLeft+1) exprSymTable [StmtAssgn postAssign]
                         case pAssgnSym of
                           Left upSym -> loop exLinNoInc stepsLeft upSym
-                          Right exSym -> loop exLinNoInc stepsLeft $ SymbolTable { symbolTableParent = parent
+                          Right exSym -> loop exLinNoInc stepsLeft SymbolTable { symbolTableParent = parent
                                     , symbolTableAttrMap = Map.unionWith mergeAttr symData exSym
                                     }
                   else pure (exLinNoInc+1, sToTake, Left sTable)
@@ -316,7 +316,7 @@ evalExpr execLine stepsToTake symTable expr =
                       let traceHistory val = TraceHistory {executionLine = 0, traceValue = TraceValue val}
                           mergParams parmExpr (ident, ty) = do
                             val <- evalE parmExpr
-                            pure $ (ident, IdentifierAttr (Just ty) NotArray [traceHistory val])
+                            pure (ident, IdentifierAttr (Just ty) NotArray [traceHistory val])
                       parmVals <- zipWithM mergParams (manyToList parmExprs) (Map.toList parmMap)
                       pure $ Map.fromList parmVals
           let funSymbolTable = stepIntoScopeWithMap globalSymbolTable initialSymData
@@ -330,10 +330,7 @@ evalExpr execLine stepsToTake symTable expr =
               -- putStrLn $ "Type of return value was: " ++ show val ++ " (" ++ show (typeOfLiteral val) ++ "), and function return type was: " ++ show mTy
               let val' = case mTy of
                     Nothing -> val
-                    Just ty ->
-                      case typeCastLiteral ty val of
-                        Just v -> v
-                        Nothing -> val
+                    Just ty -> fromMaybe val $ typeCastLiteral ty val
               pure val'
         Just _ -> error $ "Error while trying to call function '" ++ funName ++ ": Identifier is not a function!"
     Id NotArray (Identifier _ name) ->
@@ -385,19 +382,17 @@ getInput = do
     parseCmd (Just cmd) =
       case words cmd of
         [] -> Next 1
-        ("next":[]) -> Next 1
-        ("next":steps:[]) ->
+        ["next"] -> Next 1
+        ["next", steps] ->
           case readMaybe steps :: Maybe Int of
             Nothing -> Invalid
             Just s -> Next s
-        ("trace":ident:[]) -> Trace ident
-        ("print":ident:[]) -> Print ident
+        ["trace", ident] -> Trace ident
+        ["print", ident] -> Print ident
         _ -> Invalid
 
 scopedRepl :: SymbolTable -> Steps -> ExecLineNo -> [Evaluable] -> IO (ExecLineNoIncrease, Steps, Maybe LiteralValue, SymbolTable)
-scopedRepl startSymTable takeSteps exLineNo exLines = do
-  -- Step through each line.
-  loop exLineNo takeSteps startSymTable exLines
+scopedRepl startSymTable takeSteps exLineNo exLines = loop exLineNo takeSteps startSymTable exLines
   where
     loop :: ExecLineNo -> Steps -> SymbolTable -> [Evaluable] -> IO (ExecLineNoIncrease, Steps, Maybe LiteralValue, SymbolTable)
     loop n stepsLeft symTable@(SymbolTable _ symData) [] = do
@@ -405,8 +400,8 @@ scopedRepl startSymTable takeSteps exLineNo exLines = do
       debug $ returnValue symData
       -- Return the current execution line number, so that we can calculate the increase
       -- in line numbers.
-      pure $ (n-1, stepsLeft, returnValue symData, symTable)
-    loop n stepsToTake symTable execLines@((MkEvaluable line):exs) =
+      pure (n-1, stepsLeft, returnValue symData, symTable)
+    loop n stepsToTake symTable execLines@(MkEvaluable line:exs) =
       if stepsToTake <= 1
         then do
           -- Await user input.
@@ -414,7 +409,7 @@ scopedRepl startSymTable takeSteps exLineNo exLines = do
           case cmd of
             Next stepsToTake -> do
               (exLineNoInc, stepsLeft, newSymTable) <- eval n stepsToTake symTable line
-              debug $ (show n) ++ ": "
+              debug $ show n ++ ": "
               debug line
               -- Continue stepping through the lines.
               loop (n + exLineNoInc + 1) stepsLeft newSymTable exs
@@ -437,7 +432,7 @@ printTrace name TraceHistory{executionLine=execLine, traceValue=val} =
 
 -- | Recursively look up the identifier, up the symbol table tree.
 traceIdentifier :: String -> SymbolTable -> IO ()
-traceIdentifier name sTable = do
+traceIdentifier name sTable =
   case lookupIdent name (symbolTableAttrMap sTable) of
     Nothing ->
       case symbolTableParent sTable of
@@ -450,7 +445,7 @@ traceIdentifier name sTable = do
 
 -- | Recursively look up the identifier, up the symbol table tree.
 printIdentifier :: String -> SymbolTable -> IO ()
-printIdentifier name sTable = do
+printIdentifier name sTable =
   case lookupIdent name (symbolTableAttrMap sTable) of
     Nothing -> case symbolTableParent sTable of
       Nothing -> putStrLn "Invisible"
